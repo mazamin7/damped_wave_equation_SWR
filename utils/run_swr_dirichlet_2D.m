@@ -1,4 +1,4 @@
-function [ud, final_res, res_history] = run_swr_2D(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref)
+function [ud, final_res, res_history] = run_swr_dirichlet_2D(u0, v0, N, a, M, Ly, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref)
 %RUN_SWR_2D - Run 2D Schwarz Waveform Relaxation
 % Inputs:
 %   u0, v0 - function handles for initial conditions u0(x,y), v0(x,y)
@@ -23,7 +23,6 @@ function [ud, final_res, res_history] = run_swr_2D(u0, v0, N, a, M, T, c, dh, dt
 aj = @(j) a*(j-1);
 bj = @(j) aj(j+1) + M;
 Lx = bj(N);
-Ly = 5;  % Fixed Ly
 
 ajd = @(j) round(aj(j)/dh) + 1;
 bjd = @(j) round(bj(j)/dh) + 1;

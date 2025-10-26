@@ -11,41 +11,19 @@ M = 0.1;
 % M = 0.2;
 % M = 0.4;
 Lx = N*a + M;
+Ly = 0.1;
 
 % Parameters
 c = 1;              % Wave speed
 dh = 0.01;          % Spatial step in x
-dt = 0.01;
+dt = 0.7*dh/c;
 % dh = 0.001;
 % dt = 0.001;
 
 
-% Initial conditions components
-gaussian = @(r,mu,sigma) 1/(2*pi*sigma^2) * exp(-(r-mu).^2/(2*sigma^2));
-
-% Define n_max
-n_max = 100;
-
-% Compute max values for normalization
-x_test = linspace(0,Lx,1000);
-gaussian_max = max(gaussian(x_test, Lx/4, Lx/20));
-
-% Compute max of sine sum
-sine_sum_vals = zeros(size(x_test));
-for n = 1:n_max
-    sine_sum_vals = sine_sum_vals + sin(n*pi*x_test/Lx);
-end
-sine_sum_max = max(abs(sine_sum_vals));
-
-% Create normalized components as function handles
-gaussian_normalized = @(x) gaussian(x, Lx/4, Lx/20) / gaussian_max;
-
-% Create normalized sine sum function handle
-sine_sum_normalized = @(x) arrayfun(@(xi) sum(sin((1:n_max)' * pi * xi / Lx)) / sine_sum_max, x);
-
-% Create the final initial condition function
-u0 = @(x) gaussian_normalized(x) + sine_sum_normalized(x);
-v0 = @(x) 0;
+% Initial conditions
+u0 = @(x,y) 0.*x.*y;
+v0 = @(x,y) exp(-sqrt((x-Lx/3).^2+(y-Ly/3).^2));
 
 
 % Define multiple test cases
@@ -57,9 +35,9 @@ v0 = @(x) 0;
 % T = 5;
 % theta_sets = [
 %     1/c,     0;      % Initial guess
-%     0.9,     -0.5;      % Numerical optimization
-%     1,       1.5; % Spectral optimization p=2
-%     1,       0.5  % Spectral optimization p=∞
+%     0.7,     -4;      % Numerical optimization
+%     0.9,       8; % Spectral optimization p=2
+%     0.9,       0  % Spectral optimization p=∞
 % ];
 % % k = 10;
 % % k = 80;
@@ -72,14 +50,15 @@ nu = 1;
 T = 5;
 theta_sets = [
     1/c,     0;      % Initial guess
-    0.1,     3.5; % Numerical optimization
-    0.05,    5; % Spectral optimization p=2
-    0.05,    4  % Spectral optimization p=∞
+    0.1,     8; % Numerical optimization
+    0,       8; % Spectral optimization p=2
+    0,       8  % Spectral optimization p=∞
 ];
 % k = 10;
 % k = 80;
+k = 10*N;
 % k = 40*N;
-k = 60*N;
+% k = 60*N;
 
 
 disp(T*c/M)
@@ -91,12 +70,13 @@ final_errors = zeros(numSets, 1);
 
 %% Compute reference solution using modular function
 fprintf('Computing reference FDTD solution...\n');
-u_ref = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
+u_ref = run_fdtd_2D(u0, v0, Lx, Ly, T, c, dh, dt, gamma, nu);
 
 Nx = round(Lx / dh) + 1;
+Ny = round(Ly / dh) + 1;
 Nt = floor(T / dt);
 
-u_init = rand(Nx,Nt);
+u_init = rand(Nx,Ny,Nt);
 
 %% Loop over different theta sets
 for s = 1:numSets
@@ -107,7 +87,7 @@ for s = 1:numSets
             theta1, theta2, s, numSets);
     
     % Run SWR using modular function
-    [ud, final_res, res_history] = run_swr_1D(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref);
+    [ud, final_res, res_history] = run_swr_2D(u0, v0, N, a, M, Ly, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref);
     
     % Store results
     res_hist{s} = res_history;

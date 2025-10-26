@@ -1,4 +1,4 @@
-function [Z_p2, Z_inf] = contraction_surface(N, a, M, T, c, dh, dt, gamma, nu, J, THETA1, THETA2, ky)
+function [Z_p2, Z_inf] = contraction_surface(N, a, M, Ly, y_mode, T, c, dh, dt, gamma, nu, J, THETA1, THETA2)
     % CONTRACTION_SURFACE - Compute contraction factors over theta grid
     % Input: explicit parameters + THETA grids
     % Output: contraction factor surfaces for p=2 and p=inf norms
@@ -6,6 +6,8 @@ function [Z_p2, Z_inf] = contraction_surface(N, a, M, T, c, dh, dt, gamma, nu, J
     % Calculate derived parameters
     b = a + M;  % b = a + M
     Lx = N*a + M;
+
+    ky = y_mode*pi/Ly;
 
     % T = 0;
     

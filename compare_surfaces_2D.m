@@ -8,25 +8,28 @@ N = 2;
 % N = 8;
 a = 0.3;
 M = 0.1;
+Ly = 0.1;
+y_mode = 1;
 % Lx = N*a + M; % automatically determined
 T = 5;
+% T = 1;
 c = 1.0;
 dh = 0.01;
 % dh = 0.001;
-dt = 0.01;
+dt = 0.7*dh/c;
 
-% % Viscous damping case
-% gamma = 1;
-% nu = 0;
-% % k = 10;
-% k = 5*N;
-% % k = 40;
-
-% Viscoelastic damping case
-gamma = 0;
-nu = 1;
+% Viscous damping case
+gamma = 1;
+nu = 0;
 % k = 10;
 k = 5*N;
+% k = 40;
+
+% % Viscoelastic damping case
+% gamma = 0;
+% nu = 1;
+% % k = 10;
+% k = 5*N;
 
 % Parameter ranges
 % theta1_range = linspace(0, 1.2, 25);
@@ -53,11 +56,10 @@ J = 50;
 
 % Get SWR error surface for this experiment
 fprintf('Computing SWR error surface...\n');
-error_surface = swr_residual_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k, THETA1, THETA2);
+error_surface = swr_residual_surface_2D(N, a, M, Ly, T, c, dh, dt, gamma, nu, k, THETA1, THETA2);
 
 % Get contraction factor surfaces (deterministic, only need once)
 fprintf('Computing contraction factor surfaces...\n');
-Ly = 0; y_mode = 0; % 1D
 [Z_p2, Z_inf] = contraction_surface(N, a, M, Ly, y_mode, T, c, dh, dt, gamma, nu, J, THETA1, THETA2);
 
 %% Extract optimal parameters for the single experiment

@@ -1,4 +1,4 @@
-function [ud, final_res, res_history] = run_swr_2D(u0, v0, N, a_val, M, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref)
+function [ud, final_res, res_history] = run_swr_2D(u0, v0, N, a_val, M, Ly, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref)
 % 2D SWR with Robin transmission (Λ = p ∂t + q).
 % Optimized version with precomputed boundary patterns and efficient interface handling.
 
@@ -6,7 +6,6 @@ function [ud, final_res, res_history] = run_swr_2D(u0, v0, N, a_val, M, T, c, dh
 aj  = @(j) a_val*(j-1);
 bj  = @(j) aj(j+1) + M;
 Lx  = bj(N);
-Ly  = 5;
 
 Nx  = round(Lx/dh) + 1;
 Ny  = round(Ly/dh) + 1;

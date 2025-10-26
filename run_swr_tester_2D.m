@@ -71,7 +71,7 @@ u_init = rand(size(u_ref));
 %% Run SWR with Dirichlet interfaces
 fprintf('Running SWR with Dirichlet interfaces...\n');
 tic;
-[ud_dirichlet, final_res_dirichlet, res_history_dirichlet] = run_swr_dirichlet_2D(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref);
+[ud_dirichlet, final_res_dirichlet, res_history_dirichlet] = run_swr_dirichlet_2D(u0, v0, N, a, M, Ly, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref);
 time_dirichlet = toc;
 
 fprintf('Dirichlet Results:\n');
@@ -82,7 +82,7 @@ fprintf('  Time: %.2f seconds\n', time_dirichlet);
 %% Run SWR with Robin interfaces
 fprintf('Running SWR with Robin interfaces...\n');
 tic;
-[ud_robin, final_res_robin, res_history_robin] = run_swr_2D(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref);
+[ud_robin, final_res_robin, res_history_robin] = run_swr_2D(u0, v0, N, a, M, Ly, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref);
 time_robin = toc;
 
 fprintf('Robin Results:\n');
