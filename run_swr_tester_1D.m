@@ -7,7 +7,8 @@ fprintf('Quick test of run_swr...\n');
 
 % Parameters
 % N = 2;
-N = 4;
+% N = 4;
+N = 8;
 a = 0.3;
 M = 0.1;
 Lx = N*a + M;
@@ -16,14 +17,14 @@ T = 5;
 c = 1.0;
 dh = 0.01;
 dt = 0.01;
-gamma = 1;
-nu = 0;
-% gamma = 0;
-% nu = 0.1;
-theta1 = 1;
-theta2 = 0;
-% theta1 = 0;
-% theta2 = 1;
+% gamma = 1;
+% nu = 0;
+gamma = 0;
+nu = 1;
+% theta1 = 1;
+% theta2 = 0;
+theta1 = 0;
+theta2 = 1;
 % k = 100;  % Fixed number of iterations
 k = 50*N;
 

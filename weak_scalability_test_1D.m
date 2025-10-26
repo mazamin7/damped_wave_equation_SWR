@@ -18,7 +18,7 @@ gamma = 0;  nu = 1;  % viscoelastic
 
 % SWR iterations per subdomain
 % k_per_dom = 20;        % viscous
-k_per_dom = 10;      % viscoelastic
+k_per_dom = 50;      % viscoelastic
 
 % test sizes
 N_list = [2 4 8 16];
@@ -71,7 +71,8 @@ for ii = 1:numel(N_list)
     fprintf('[N=%d] optimizing (p,q)...\n',N);
     f = @(x) objfun(N,T,dt,J,c,gamma,nu,a_val,M,x(1),x(2),ky);
     [x_opt, ~] = fminsearch(f, x0, options);
-    p = x_opt(1);  q = x_opt(2);
+    % p = x_opt(1);  q = x_opt(2);
+    p = 1/c; q = 0;
     p_opt(ii) = p; q_opt(ii) = q;
     x0 = x_opt;    % warm-start next N
 
