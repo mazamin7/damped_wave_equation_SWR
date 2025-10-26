@@ -1,7 +1,9 @@
 % QUICK_TEST_RUN_SWR_2D - Compare FDTD, SWR Dirichlet, and SWR Robin
 clear all; close all; clc;
 
-fprintf('Comparing FDTD, SWR Dirichlet, and SWR Robin...\n');
+addpath("utils\")
+
+fprintf('Comparing FDTD, SWR Dirichlet, and SWR Robin in 2D...\n');
 
 % Parameters
 % N = 2;
