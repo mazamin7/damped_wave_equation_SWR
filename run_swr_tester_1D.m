@@ -19,20 +19,20 @@ c = 1.0;
 dh = 0.01;
 dt = 0.01;
 
-% viscous
-gamma = 1;
-nu = 0;
-theta1 = 1/c;
-theta2 = 0;
-k = 50*N;
-
-% % viscoelastic
-% gamma = 0;
-% nu = 1;
-% theta1 = 0;
-% theta2 = 1/a;
-% % k = 10*N;
+% % viscous
+% gamma = 1;
+% nu = 0;
+% theta1 = 1/c;
+% theta2 = 0;
 % k = 50*N;
+
+% viscoelastic
+gamma = 0;
+nu = 1;
+theta1 = 0;
+theta2 = 1/a;
+% k = 10*N;
+k = 50*N;
 
 
 fprintf('Number of iterations needed with Dirichlet int.cond.: %d\n', ceil(c*T/M/2*N));

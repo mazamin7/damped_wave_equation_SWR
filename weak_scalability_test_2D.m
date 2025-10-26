@@ -17,8 +17,8 @@ T     = 5;
 gamma = 0;  nu = 1;  % viscoelastic
 
 % SWR iterations per subdomain
-% k_per_dom = 20;        % viscous
-k_per_dom = 5;      % viscoelastic
+% k_per_dom = 50;        % viscous
+k_per_dom = 50;      % viscoelastic
 
 % test sizes
 N_list = [2 4 8 16];
