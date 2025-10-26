@@ -53,7 +53,7 @@ J = 50;
 
 % Get SWR error surface for this experiment
 fprintf('Computing SWR error surface...\n');
-error_surface = swr_residual_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k, THETA1, THETA2);
+error_surface = swr_error_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k, THETA1, THETA2);
 
 % Get contraction factor surfaces (deterministic, only need once)
 fprintf('Computing contraction factor surfaces...\n');
