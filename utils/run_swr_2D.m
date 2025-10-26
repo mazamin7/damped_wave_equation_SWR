@@ -40,17 +40,26 @@ Aj = mu0*speye(Nxj*Ny) - beta*Ld;
 Bj = (2/dt2)*speye(Nxj*Ny) + c^2*Ld;
 Cj = -mu1*speye(Nxj*Ny) - beta*Ld;
 
+% % -------------- SWR arrays (ud and ujnew) --------------
+% ud    = u_init;                             % global SWR solution
+% ujnew = zeros(N, Nx, Ny, Nt);               % per-subdomain fields
+% for j = 1:N, ujnew(j,:,:,:) = u_init; end
+
 % -------------- SWR arrays (ud and ujnew) --------------
-ud    = u_init;                             % global SWR solution
-ujnew = zeros(N, Nx, Ny, Nt);               % per-subdomain fields
-for j = 1:N, ujnew(j,:,:,:) = u_init; end
+ud = u_init;                                  % Nx x Ny x Nt
+ujnew = repmat(reshape(u_init,[1,size(u_init)]), [N,1,1,1]);  % N x Nx x Ny x Nt
 
 % initial conditions from u0,v0
-U0 = zeros(Nx,Ny); U1 = zeros(Nx,Ny);
-for jj = 1:Ny
-    U0(:,jj) = u0(x_axis, y_axis(jj));
-    U1(:,jj) = u0(x_axis, y_axis(jj)) + dt * v0(x_axis, y_axis(jj));
-end
+% U0 = zeros(Nx,Ny); U1 = zeros(Nx,Ny);
+% for jj = 1:Ny
+%     U0(:,jj) = u0(x_axis, y_axis(jj));
+%     U1(:,jj) = u0(x_axis, y_axis(jj)) + dt * v0(x_axis, y_axis(jj));
+% end
+
+[Xg,Yg] = ndgrid(x_axis, y_axis);           % Nx-by-Ny
+U0 = u0(Xg, Yg);                             % Nx-by-Ny
+U1 = u0(Xg, Yg) + dt * v0(Xg, Yg);           % Nx-by-Ny
+
 ud(:,:,1) = U0; ud(:,:,2) = U1;
 for j = 1:N
     ujnew(j,ajd(j):bjd(j),:,1) = U0(ajd(j):bjd(j),:);
