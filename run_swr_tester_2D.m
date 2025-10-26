@@ -5,35 +5,39 @@ fprintf('Comparing FDTD, SWR Dirichlet, and SWR Robin...\n');
 
 % Parameters
 % N = 2;
-N = 4;
+% N = 4;
+% N = 8;
+N = 16;
+
 a = 0.3;
 M = 0.1;
 Lx = N*a + M;
 Ly = 0.1;
 T = 5;
 c = 1.0;
-dh = 0.01;
+% dh = 0.01;
+dh = 0.05;
 dt = 0.7*dh/c;
 
-% % viscous
-% gamma = 1;
-% nu = 0;
-% theta1 = 1/c;
-% theta2 = 0;
+% viscous
+gamma = 1;
+nu = 0;
+theta1 = 1/c;
+theta2 = 0;
+k = 50*N;
 
-% viscoelastic
-gamma = 0;
-nu = 1;
+% % viscoelastic
+% gamma = 0;
+% nu = 1;
 % theta1 = 0;
 % theta2 = 1/a;
-theta1 = 0;
-theta2 = 8;
-
-
-% SWR iterations
-k = 5*N; % viscoelastic
-% k = 20*N; % viscous
+% % theta1 = 0;
+% % theta2 = 8;
 % k = 50*N;
+
+
+fprintf('Number of iterations needed with Dirichlet int.cond.: %d\n', ceil(c*T/M/2*N));
+
 
 % % Initial conditions
 % u0 = @(x,y) sin(3*pi.*x/Lx) .* sin(5*pi.*y/Ly);
