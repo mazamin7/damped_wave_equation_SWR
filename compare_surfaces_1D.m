@@ -11,9 +11,10 @@ M = 0.1;
 % Lx = N*a + M; % automatically determined
 T = 5;
 c = 1.0;
-dh = 0.01;
-% dh = 0.001;
-dt = 0.01;
+% dh = 0.01;
+% dt = 0.01;
+dh = 0.001;
+dt = 0.001;
 
 % % Viscous damping case
 % gamma = 1;
@@ -29,11 +30,11 @@ nu = 1;
 k = 5*N;
 
 % Parameter ranges
-% theta1_range = linspace(0, 1.2, 25);
-% theta2_range = linspace(-4, 8, 25);
+theta1_range = linspace(0, 1.2, 25);
+theta2_range = linspace(-4, 8, 25);
 
-theta1_range = linspace(0, 1.2, 13);
-theta2_range = linspace(-4, 8, 13);
+% theta1_range = linspace(0, 1.2, 13);
+% theta2_range = linspace(-4, 8, 13);
 
 % % for debug
 % theta1_range = linspace(0, 1.2, 1);

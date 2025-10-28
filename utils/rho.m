@@ -1,5 +1,10 @@
 % Precompute contraction factor function with finite-domain factors
 function r = rho(N, s, theta1, theta2, c, gamma, nu, a, b, ky)
+    if isnan(ky)
+        ky = 0;
+        disp('Error: ky was NaN')
+    end
+
     if(N == 2)
         % Spectral radius with finite-domain factors a, b
         ikappa = sqrt((s.^2+gamma.*s) ./ (c^2+nu.*s) + ky^2);

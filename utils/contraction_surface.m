@@ -7,11 +7,16 @@ function [Z_p2, Z_inf] = contraction_surface(N, a, M, Ly, y_mode, T, c, dh, dt, 
     b = a + M;  % b = a + M
     Lx = N*a + M;
 
-    ky = y_mode*pi/Ly;
+	if Ly ~= 0
+		ky = y_mode*pi/Ly;
+	else
+		ky = 0;
+	end
 
     % T = 0;
     
-    omega_min = 2*pi / T;
+    % omega_min = 2*pi / T;
+    omega_min = pi / T;
     omega_max = pi / dt;
     
     % Frequency grid
