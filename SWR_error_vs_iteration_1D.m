@@ -14,10 +14,10 @@ Lx = N*a + M;
 
 % Parameters
 c = 1;              % Wave speed
-dh = 0.01;          % Spatial step in x
-dt = 0.01;
-% dh = 0.001;
-% dt = 0.001;
+% dh = 0.01;          % Spatial step in x
+% dt = 0.01;
+dh = 0.001;
+dt = 0.001;
 
 
 % Initial conditions components
@@ -51,35 +51,95 @@ v0 = @(x) 0;
 % Define multiple test cases
 
 % % viscous damping case T1
+% gamma = 0.1;
+% nu = 0;
+% % T = 1;
+% T = 5;
+% theta_sets = [
+%     1/c,     0;      % Initial guess
+%     0.6,     8;      % Numerical optimization
+%     1,       2; % Spectral optimization p=2
+%     1,       0  % Spectral optimization p=∞
+% ];
+% % k = 10;
+% % k = 80;
+% k = 40*N;
+
+% % viscous damping case T1
 % gamma = 1;
 % nu = 0;
 % % T = 1;
 % T = 5;
 % theta_sets = [
 %     1/c,     0;      % Initial guess
-%     0.9,     -0.5;      % Numerical optimization
-%     1,       1.5; % Spectral optimization p=2
-%     1,       0.5  % Spectral optimization p=∞
+%     0.5,     4.5;      % Numerical optimization
+%     1,       4.5; % Spectral optimization p=2
+%     1,       1  % Spectral optimization p=∞
 % ];
 % % k = 10;
 % % k = 80;
 % k = 40*N;
 
-% viscoelastic damping case T1
-gamma = 0;
-nu = 1;
+% % viscous damping case T1
+% gamma = 10;
+% nu = 0;
+% % T = 1;
+% T = 5;
+% theta_sets = [
+%     1/c,     0;      % Initial guess
+%     1.8,     8;      % Numerical optimization
+%     1,       4; % Spectral optimization p=2
+%     1,       4  % Spectral optimization p=∞
+% ];
+% % k = 10;
+% % k = 80;
+% k = 40*N;
+
+% viscous damping case T1
+gamma = 100;
+nu = 0;
 % T = 1;
 T = 5;
 theta_sets = [
     1/c,     0;      % Initial guess
-    0.1,     3.5; % Numerical optimization
-    0.05,    5; % Spectral optimization p=2
-    0.05,    4  % Spectral optimization p=∞
+    0,       20;      % Numerical optimization
+    4,       8.5; % Spectral optimization p=2
+    4.75,    8  % Spectral optimization p=∞
 ];
 % k = 10;
 % k = 80;
+k = 40*N;
+
+% % viscous damping case T1
+% gamma = 1000;
+% nu = 0;
+% % T = 1;
+% T = 5;
+% theta_sets = [
+%     1/c,     0;      % Initial guess
+%     0.8,     10;      % Numerical optimization
+%     2,       20; % Spectral optimization p=2
+%     2,       20  % Spectral optimization p=∞
+% ];
+% % k = 10;
+% % k = 80;
 % k = 40*N;
-k = 60*N;
+
+% % viscoelastic damping case T1
+% gamma = 0;
+% nu = 1;
+% % T = 1;
+% T = 5;
+% theta_sets = [
+%     1/c,     0;      % Initial guess
+%     0.1,     4; % Numerical optimization
+%     0.05,    5; % Spectral optimization p=2
+%     0.05,    4  % Spectral optimization p=∞
+% ];
+% % k = 10;
+% % k = 80;
+% % k = 40*N;
+% k = 40*N;
 
 
 disp(T*c/M)

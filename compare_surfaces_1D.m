@@ -11,30 +11,37 @@ M = 0.1;
 % Lx = N*a + M; % automatically determined
 T = 5;
 c = 1.0;
-% dh = 0.01;
-% dt = 0.01;
-dh = 0.001;
-dt = 0.001;
+dh = 0.01;
+dt = 0.01;
+% dh = 0.001;
+% dt = 0.001;
 
-% % Viscous damping case
+% Viscous damping case
+% gamma = 0.1;
 % gamma = 1;
-% nu = 0;
-% % k = 10;
-% k = 5*N;
-% % k = 40;
-
-% Viscoelastic damping case
-gamma = 0;
-nu = 1;
+% gamma = 10;
+gamma = 100;
+% gamma = 1000;
+nu = 0;
 % k = 10;
 k = 5*N;
+% k = 40;
+
+% % Viscoelastic damping case
+% gamma = 0;
+% nu = 1;
+% % k = 10;
+% k = 5*N;
 
 % Parameter ranges
-theta1_range = linspace(0, 1.2, 25);
-theta2_range = linspace(-4, 8, 25);
+% theta1_range = linspace(0, 1.2, 25);
+% theta2_range = linspace(-4, 8, 25);
 
 % theta1_range = linspace(0, 1.2, 13);
 % theta2_range = linspace(-4, 8, 13);
+
+theta1_range = linspace(0, 5, 21);
+theta2_range = linspace(0, 10, 21);
 
 % % for debug
 % theta1_range = linspace(0, 1.2, 1);
@@ -107,10 +114,10 @@ plot(min_theta1_inf, min_theta2_inf, 'g^', 'MarkerSize', 10, 'MarkerFaceColor', 
 colorbar;
 xlabel('p', 'FontSize', 16);
 ylabel('q', 'FontSize', 16);
-title('Log-scale Error Surface');
+% title('Log-scale Error Surface');
 legend('show', 'Location', 'NorthEast', 'FontSize', 14);
 colormap('parula');
-% clim([-7,3])
+clim([-7,3])
 % Make tick labels bigger
 set(gca, 'FontSize', 18);
 saveas(gcf, fullfile(results_dir, 'surface_comparison.png'));

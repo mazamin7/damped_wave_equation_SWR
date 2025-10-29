@@ -173,10 +173,12 @@ function [ud, final_res, res_history] = run_swr_1D(u0, v0, N, a_val, M, T, c, dh
             ud(ajd(j):bjd(j), :) = ujnew(j, ajd(j):bjd(j), :);
 
             % figure()
-            % imagesc(x_axis, t_axis, abs(ud - u_ref)' / max(abs(u_ref), [], 'all'))
+            % mesh(x_axis, t_axis, abs(ud - u_ref)' / max(abs(u_ref), [], 'all'))
             % xlabel('space')
             % ylabel('time')
             % set(gca, 'YDir', 'normal')
+            % title_str = sprintf('Iteration %d', iter_k);
+            % title(title_str)
 
             % Compute and store residual after each complete iteration
             res = max(abs(ud - u_ref), [], 'all') / max(abs(u_ref), [], 'all');

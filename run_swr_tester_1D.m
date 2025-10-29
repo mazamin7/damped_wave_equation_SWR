@@ -6,33 +6,36 @@ addpath("utils\")
 fprintf('Comparing FDTD, SWR Dirichlet, and SWR Robin in 1D...\n');
 
 % Parameters
-% N = 2;
+N = 2;
 % N = 4;
 % N = 8;
-N = 16;
+% N = 16;
 
 a = 0.3;
 M = 0.1;
 Lx = N*a + M;
-T = 5;
+% T = 5;
+T = 2;
 c = 1.0;
 dh = 0.01;
 dt = 0.01;
 
-% % viscous
+% viscous
 % gamma = 1;
-% nu = 0;
-% theta1 = 1/c;
-% theta2 = 0;
-% k = 50*N;
-
-% viscoelastic
-gamma = 0;
-nu = 1;
-theta1 = 0;
-theta2 = 1/a;
-% k = 10*N;
+gamma = 10;
+% gamma = 100;
+nu = 0;
+theta1 = 1/c;
+theta2 = 0;
 k = 50*N;
+
+% % viscoelastic
+% gamma = 0;
+% nu = 1;
+% theta1 = 0;
+% theta2 = 1/a;
+% % k = 10*N;
+% k = 50*N;
 
 
 fprintf('Number of iterations needed with Dirichlet int.cond.: %d\n', ceil(c*T/M/2*N));
@@ -94,6 +97,9 @@ u_ref = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
 
 Nx = round(Lx / dh) + 1;
 Nt = floor(T / dt);
+
+rng(123);
+
 u_init = rand(Nx,Nt);
 
 %% Run SWR with Dirichlet interfaces
