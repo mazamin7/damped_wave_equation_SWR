@@ -95,20 +95,20 @@ v0 = @(x) 0;
 % % k = 80;
 % k = 40*N;
 
-% viscous damping case T1
-gamma = 100;
-nu = 0;
-% T = 1;
-T = 5;
-theta_sets = [
-    1/c,     0;      % Initial guess
-    0,       20;      % Numerical optimization
-    4,       8.5; % Spectral optimization p=2
-    4.75,    8  % Spectral optimization p=∞
-];
-% k = 10;
-% k = 80;
-k = 40*N;
+% % viscous damping case T1
+% gamma = 100;
+% nu = 0;
+% % T = 1;
+% T = 5;
+% theta_sets = [
+%     1/c,     0;      % Initial guess
+%     0,       20;      % Numerical optimization
+%     4,       8.5; % Spectral optimization p=2
+%     4.75,    8  % Spectral optimization p=∞
+% ];
+% % k = 10;
+% % k = 80;
+% k = 40*N;
 
 % % viscous damping case T1
 % gamma = 1000;
@@ -140,6 +140,70 @@ k = 40*N;
 % % k = 80;
 % % k = 40*N;
 % k = 40*N;
+
+% % viscoelastic damping case T1
+% gamma = 0;
+% nu = 2;
+% % T = 1;
+% T = 5;
+% theta_sets = [
+%     1/c,     0;      % Initial guess
+%     0.05,    3; % Numerical optimization
+%     0.05,    4; % Spectral optimization p=2
+%     0.05,    4  % Spectral optimization p=∞
+% ];
+% % k = 10;
+% % k = 80;
+% % k = 40*N;
+% k = 40*N;
+
+% % viscoelastic damping case T1
+% gamma = 0;
+% nu = 5;
+% % T = 1;
+% T = 5;
+% theta_sets = [
+%     1/c,     0;      % Initial guess
+%     0,       5.5; % Numerical optimization
+%     0.05,    4; % Spectral optimization p=2
+%     0,       6  % Spectral optimization p=∞
+% ];
+% % k = 10;
+% % k = 80;
+% % k = 40*N;
+% k = 40*N;
+
+% % viscoelastic damping case T1
+% gamma = 0;
+% nu = 10;
+% % T = 1;
+% T = 5;
+% theta_sets = [
+%     1/c,     0;      % Initial guess
+%     0,       5; % Numerical optimization
+%     0,       4; % Spectral optimization p=2
+%     0,       5  % Spectral optimization p=∞
+% ];
+% % k = 10;
+% % k = 80;
+% % k = 40*N;
+% k = 40*N;
+
+% viscoelastic damping case T1
+gamma = 0;
+nu = 100;
+% T = 1;
+T = 5;
+theta_sets = [
+    1/c,     0;      % Initial guess
+    0,       4.5; % Numerical optimization
+    0,       3.5; % Spectral optimization p=2
+    0,       3.5  % Spectral optimization p=∞
+];
+% k = 10;
+% k = 80;
+% k = 40*N;
+k = 40*N;
 
 
 disp(T*c/M)

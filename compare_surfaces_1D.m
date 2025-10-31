@@ -29,7 +29,11 @@ k = 5*N;
 
 % % Viscoelastic damping case
 % gamma = 0;
-% nu = 1;
+% % nu = 1;
+% % nu = 2;
+% % nu = 5;
+% % nu = 10;
+% nu = 100;
 % % k = 10;
 % k = 5*N;
 
@@ -40,8 +44,11 @@ k = 5*N;
 % theta1_range = linspace(0, 1.2, 13);
 % theta2_range = linspace(-4, 8, 13);
 
+% theta1_range = linspace(0, 5, 21);
+% theta2_range = linspace(0, 10, 21);
+
 theta1_range = linspace(0, 5, 21);
-theta2_range = linspace(0, 10, 21);
+theta2_range = linspace(0, 20, 21);
 
 % % for debug
 % theta1_range = linspace(0, 1.2, 1);
@@ -117,7 +124,8 @@ ylabel('q', 'FontSize', 16);
 % title('Log-scale Error Surface');
 legend('show', 'Location', 'NorthEast', 'FontSize', 14);
 colormap('parula');
-clim([-7,3])
+% clim([-7,3])
+% clim([-4,3])
 % Make tick labels bigger
 set(gca, 'FontSize', 18);
 saveas(gcf, fullfile(results_dir, 'surface_comparison.png'));
@@ -137,6 +145,7 @@ ylabel('q', 'FontSize', 16);
 title('L2 global contraction factor');
 legend('show', 'Location', 'NorthEast', 'FontSize', 14);
 colormap('parula');
+clim([0,1])
 % Make tick labels bigger
 set(gca, 'FontSize', 18);
 
@@ -155,6 +164,7 @@ ylabel('q', 'FontSize', 16);
 title('Linf global contraction factor');
 legend('show', 'Location', 'NorthEast', 'FontSize', 14);
 colormap('parula');
+clim([0,1])
 % Make tick labels bigger
 set(gca, 'FontSize', 18);
 
