@@ -125,21 +125,21 @@ v0 = @(x) 0;
 % % k = 80;
 % k = 40*N;
 
-% % viscoelastic damping case T1
-% gamma = 0;
-% nu = 1;
-% % T = 1;
-% T = 5;
-% theta_sets = [
-%     1/c,     0;      % Initial guess
-%     0.1,     4; % Numerical optimization
-%     0.05,    5; % Spectral optimization p=2
-%     0.05,    4  % Spectral optimization p=∞
-% ];
-% % k = 10;
-% % k = 80;
-% % k = 40*N;
+% viscoelastic damping case T1
+gamma = 0;
+nu = 1;
+% T = 1;
+T = 5;
+theta_sets = [
+    1/c,     0;      % Initial guess
+    0.1,     4; % Numerical optimization
+    0.05,    5; % Spectral optimization p=2
+    0.05,    4  % Spectral optimization p=∞
+];
+% k = 10;
+% k = 80;
 % k = 40*N;
+k = 40*N;
 
 % % viscoelastic damping case T1
 % gamma = 0;
@@ -189,21 +189,21 @@ v0 = @(x) 0;
 % % k = 40*N;
 % k = 40*N;
 
-% viscoelastic damping case T1
-gamma = 0;
-nu = 100;
-% T = 1;
-T = 5;
-theta_sets = [
-    1/c,     0;      % Initial guess
-    0,       4.5; % Numerical optimization
-    0,       3.5; % Spectral optimization p=2
-    0,       3.5  % Spectral optimization p=∞
-];
-% k = 10;
-% k = 80;
+% % viscoelastic damping case T1
+% gamma = 0;
+% nu = 100;
+% % T = 1;
+% T = 5;
+% theta_sets = [
+%     1/c,     0;      % Initial guess
+%     0,       4.5; % Numerical optimization
+%     0,       3.5; % Spectral optimization p=2
+%     0,       3.5  % Spectral optimization p=∞
+% ];
+% % k = 10;
+% % k = 80;
+% % k = 40*N;
 % k = 40*N;
-k = 40*N;
 
 
 disp(T*c/M)
@@ -259,6 +259,8 @@ end
 xlabel('Iteration','FontSize', 16);
 ylabel('Error','FontSize', 16);
 xticks(0:10:k)
+ylim([1e-15,1e5])
+yticks([1e-15,1e-10,1e-5,1e0,1e5])
 % title('WR Convergence with Different Robin Interface Parameters', 'FontSize', 24);
 
 legend(legend_labels{1:numSets}, 'Location', 'NorthEast', 'FontSize', 14);
