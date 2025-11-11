@@ -29,13 +29,11 @@ function u = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu)
     B = spalloc(Nx,Nx,3*Nx);
     C = spalloc(Nx,Nx,3*Nx);
 
-    % interior
     for i = 2:Nx-1
         A(i,i-1:i+1) = [a1, a3, a1];
         B(i,i-1:i+1) = [b1, b3, b1];
         C(i,i-1:i+1) = [c1, c3, c1];
     end
-    % boundaries
     A(1,1:2)        = [a3, a1];      A(Nx,Nx-1:Nx) = [a1, a3];
     B(1,1:2)        = [b3, b1];      B(Nx,Nx-1:Nx) = [b1, b3];
     C(1,1:2)        = [c3, c1];      C(Nx,Nx-1:Nx) = [c1, c3];
@@ -45,8 +43,10 @@ function u = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu)
 
     % second-order startup: u_tt = c^2 u_xx + nu v_xx - gamma v
     u   = zeros(Nx,Nt);
-    u0v = u0(x);
-    v0v = v0(x);
+
+    % FORCE COLUMN SHAPE here
+    u0v = u0(x); u0v = u0v(:);
+    v0v = v0(x); v0v = v0v(:);
 
     Dxx = spdiags([ones(Nx,1) -2*ones(Nx,1) ones(Nx,1)], [-1 0 1], Nx, Nx)/dh^2;
     Dxx(1,:)=0; Dxx(Nx,:)=0;

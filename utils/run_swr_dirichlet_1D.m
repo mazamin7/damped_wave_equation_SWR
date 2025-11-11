@@ -17,8 +17,8 @@ function [ud, final_res, res_history] = run_swr_dirichlet_1D(u0, v0, N, a_val, M
     Nxj = bjd(1);
     
     % Derived parameters
-    Nx = round(Lx / dh) + 1;
-    Nt = floor(T / dt);
+    Nx = round(Lx/dh) + 1;
+    Nt = round(T/dt) + 1;
     CFL = c * dt / dh;
 
     x_axis = linspace(0, Lx, Nx);
@@ -64,8 +64,8 @@ function [ud, final_res, res_history] = run_swr_dirichlet_1D(u0, v0, N, a_val, M
         ujnew(j, :, :) = u_init;
     end
 
-    u0_val = u0(x_axis);
-    u1_val = u0(x_axis) + dt * v0(x_axis);
+    u0_val = u_ref(:,1)';
+    u1_val = u_ref(:,2)';
 
     % Set initial conditions from reference solution
     for j = 1:N
