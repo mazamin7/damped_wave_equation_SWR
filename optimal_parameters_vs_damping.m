@@ -411,34 +411,45 @@ for ic = 1:Nv
     q_gam(ic,:)   = optimal_pinf_gamma{ic}(:,2).';
 end
 
-p_all_g = p_gam(:);  q_all_g = q_gam(:);  rho_all_g = rho_gam(:);
-
 figure('Name','Figure 3: gamma and nu sweep','Position',[100,100,1200,520]);
 
-% LEFT: (p,q) area
+% LEFT: (p,q) sweep lines, color by fixed nu + boundary of occupied region
 subplot(2,2,1); hold on;
-mask = isfinite(p_all_g) & isfinite(q_all_g) & isfinite(rho_all_g) & (rho_all_g < 1);
-p = p_all_g(mask); q = q_all_g(mask); r = rho_all_g(mask);
-scatter(p, q, 10, log10(r), 'filled', 'MarkerFaceAlpha', 0.35);
+colors = lines(Nv);
+for ic = 1:Nv
+    plot(p_gam(ic,:), q_gam(ic,:), '-', 'LineWidth', 2, ...
+        'Color', colors(ic,:), 'DisplayName', sprintf('\\nu=%.2f', V(ic)));
+    plot(p_gam(ic,1),  q_gam(ic,1),  'o', 'MarkerSize', 6, ...
+        'MarkerFaceColor', colors(ic,:), 'Color','k','HandleVisibility','off');
+    plot(p_gam(ic,end),q_gam(ic,end),'s', 'MarkerSize', 6, ...
+        'MarkerFaceColor', colors(ic,:), 'Color','k','HandleVisibility','off');
+end
+% boundary using all curve points
+P = p_gam(:); Q = q_gam(:);
+mask = isfinite(P) & isfinite(Q);
+P = P(mask); Q = Q(mask);
+try
+    shp = alphaShape(P,Q);
+    shp.Alpha = 0.85*criticalAlpha(shp);   % tighten if needed
+    plot(shp,'FaceColor','none','EdgeColor','k','LineWidth',1.4,'HandleVisibility','off');
+catch
+    K = boundary(P,Q,0.99);                 % fallback
+    plot(P(K),Q(K),'k-','LineWidth',1.4,'HandleVisibility','off');
+end
+xlabel('p'); ylabel('q'); title('Optimal (p,q) — varying \gamma (fixed \nu)');
+grid on; box on; set(gca,'FontSize',16);
+xlim([0, 1.5]); ylim([-4, 8]);
+legend('Location','northeast');
+
+% RIGHT: unchanged contour
+subplot(2,2,[2 4]);
+contourf(G, V, log10(rho_gam), 20, 'LineColor','none');
 colormap(parula); cb = colorbar; cb.Label.Interpreter = 'latex';
 cb.Label.String = '$\log_{10}(\rho_\infty^\star)$';
-xlabel('p'); ylabel('q'); title('Optimal $(p,q)$ region (gamma-sweep)','Interpreter','latex');
+xlabel('\gamma'); ylabel('\nu'); title('Optimal contraction (gamma-sweep grid)','Interpreter','latex');
 grid on; box on; set(gca,'FontSize',16);
-try, K = boundary(p,q,0.99); plot(p(K),q(K),'k-','LineWidth',1.3); end
-% padx=0.05*(max(p)-min(p)+eps); pady=0.05*(max(q)-min(q)+eps);
-% xlim([min(p)-padx, max(p)+padx]); ylim([min(q)-pady, max(q)+pady]);
-xlim([0, 1.5])
-ylim([-4, 8])
 
-% % RIGHT: contour over (gamma, nu_fixed); Z is Nv x Ng
-% subplot(1,2,2);
-% contourf(G, V, log10(rho_gam), 20, 'LineColor','none');
-% colormap(parula); cb = colorbar; cb.Label.Interpreter = 'latex';
-% cb.Label.String = '$\log_{10}(\rho_\infty^\star)$';
-% xlabel('\gamma'); ylabel('\nu'); title('Optimal contraction (gamma-sweep grid)','Interpreter','latex');
-% grid on; box on; set(gca,'FontSize',16);
-
-%% ===== FIGURE 4: nu-sweep joint view =====
+% ===== FIGURE 4: nu-sweep joint view =====
 Gf  = gamma_fixed_values(:)';          % 1 x Ngf
 Vn  = nu_values(:)';                   % 1 x Nn
 Ngf = numel(Gf);  Nn = numel(Vn);
@@ -450,31 +461,39 @@ for ic = 1:Ngf
     q_nu(ic,:)   = optimal_pinf_nu{ic}(:,2).';
 end
 
-p_all_n = p_nu(:);  q_all_n = q_nu(:);  rho_all_n = rho_nu(:);
-
-% figure('Name','Figure 4: nu-sweep','Position',[100,100,1200,520]);
-
-% LEFT: (p,q) area
+% LEFT: (p,q) sweep lines, color by fixed gamma + boundary
 subplot(2,2,3); hold on;
-mask = isfinite(p_all_n) & isfinite(q_all_n) & isfinite(rho_all_n) & (rho_all_n < 1);
-p = p_all_n(mask); q = q_all_n(mask); r = rho_all_n(mask);
-scatter(p, q, 10, log10(r), 'filled', 'MarkerFaceAlpha', 0.35);
-colormap(parula); cb = colorbar; cb.Label.Interpreter = 'latex';
-cb.Label.String = '$\log_{10}(\rho_\infty^\star)$';
-xlabel('p'); ylabel('q'); title('Optimal $(p,q)$ region (nu-sweep)','Interpreter','latex');
+colors = lines(Ngf);
+for ic = 1:Ngf
+    plot(p_nu(ic,:), q_nu(ic,:), '-', 'LineWidth', 2, ...
+        'Color', colors(ic,:), 'DisplayName', sprintf('\\gamma=%.2f', Gf(ic)));
+    plot(p_nu(ic,1),  q_nu(ic,1),  'o', 'MarkerSize', 6, ...
+        'MarkerFaceColor', colors(ic,:), 'Color','k','HandleVisibility','off');
+    plot(p_nu(ic,end),q_nu(ic,end),'s', 'MarkerSize', 6, ...
+        'MarkerFaceColor', colors(ic,:), 'Color','k','HandleVisibility','off');
+end
+P = p_nu(:); Q = q_nu(:);
+mask = isfinite(P) & isfinite(Q);
+P = P(mask); Q = Q(mask);
+try
+    shp = alphaShape(P,Q);
+    shp.Alpha = 0.85*criticalAlpha(shp);
+    plot(shp,'FaceColor','none','EdgeColor','k','LineWidth',1.4,'HandleVisibility','off');
+catch
+    K = boundary(P,Q,0.99);
+    plot(P(K),Q(K),'k-','LineWidth',1.4,'HandleVisibility','off');
+end
+xlabel('p'); ylabel('q'); title('Optimal (p,q) — varying \nu (fixed \gamma)');
 grid on; box on; set(gca,'FontSize',16);
-try, K = boundary(p,q,0.99); plot(p(K),q(K),'k-','LineWidth',1.3); end
-% padx=0.05*(max(p)-min(p)+eps); pady=0.05*(max(q)-min(q)+eps);
-% xlim([min(p)-padx, max(p)+padx]); ylim([min(q)-pady, max(q)+pady]);
-xlim([0, 1.5])
-ylim([-4, 8])
+xlim([0, 1.5]); ylim([-4, 8]);
+legend('Location','northeast');
 
-% RIGHT: contour over (gamma_fixed, nu); need Z of size [length(Vn) x length(Gf)]
+% RIGHT: unchanged contour
 subplot(2,2,[2 4]);
-contourf(Gf, Vn, log10(rho_nu.'), 20, 'LineColor','none');  % transpose once
+contourf(Gf, Vn, log10(rho_nu.'), 20, 'LineColor','none');  % Z is Nn x Ngf
 colormap(parula); cb = colorbar; cb.Label.Interpreter = 'latex';
 cb.Label.String = '$\log_{10}(\rho_\infty^\star)$';
-xlabel('\gamma'); ylabel('\nu'); title('Optimal contraction (nu-sweep grid)','Interpreter','latex');
+xlabel('\gamma'); ylabel('\nu'); title('Optimal contraction','Interpreter','latex');
 grid on; box on; set(gca,'FontSize',16);
 
 %% Helper functions (unchanged)
