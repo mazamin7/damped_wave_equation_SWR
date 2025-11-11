@@ -21,18 +21,18 @@ dt = 0.01;
 % J = 500; % number of frequency steps from 2*pi/T to pi/dt
 J = 50;
 
-tol = 1e-6;
-% tol = 1e-9;
+% tol = 1e-6;
+tol = 1e-9;
 
 %% Define parameter sets for different cases (updated as per advisor)
 % Cases: Varying gamma with different fixed nu values
-gamma_values = linspace(0,6,15);  % Varying gamma from 0 to 3
-nu_fixed_values = 2*[0, 0.05, 0.1, 0.5, 1, 3];  % Fixed nu values (replaced 5 with 3)
+gamma_values = linspace(0,6,200);  % Varying gamma from 0 to 3
+nu_fixed_values = 2*[0, 0.025, 0.05, 0.1, 0.5, 1, 2, 3];  % Fixed nu values (replaced 5 with 3)
 num_gamma_cases = length(nu_fixed_values);
 
 % Cases: Varying nu with different fixed gamma values  
-nu_values = linspace(0,6,15);  % Varying nu from 0 to 3
-gamma_fixed_values = 2*[0, 0.05, 0.1, 0.5, 1, 3];  % Fixed gamma values (replaced 5 with 3)
+nu_values = linspace(0,6,200);  % Varying nu from 0 to 3
+gamma_fixed_values = 2*[0, 0.025, 0.05, 0.1, 0.5, 1, 2, 3];  % Fixed gamma values (replaced 5 with 3)
 num_nu_cases = length(gamma_fixed_values);
 
 %% Initialize storage arrays (only L∞)
@@ -66,7 +66,7 @@ for case_idx = 1:num_gamma_cases
         
         % L∞ optimization only
         objfun_pinf = @(x) obj_Linf(N, T, dt, J, c, gamma, nu_fixed, a, M, x(1), x(2), ky);
-        options = optimset('Display', 'off', 'TolX', tol, 'TolFun', tol);
+        options = optimset('Display', 'off', 'TolX', tol, 'TolFun', tol, 'MaxFunEvals', 2e4, 'MaxIter', 2e4);
         [x_opt_pinf, fval_pinf] = fminsearch(objfun_pinf, x0_pinf, options);
         optimal_pinf_gamma{case_idx}(i,:) = x_opt_pinf;
         contraction_pinf_gamma{case_idx}(i) = fval_pinf;
@@ -96,11 +96,123 @@ for case_idx = 1:num_nu_cases
         
         % L∞ optimization only
         objfun_pinf = @(x) obj_Linf(N, T, dt, J, c, gamma_fixed, nu, a, M, x(1), x(2), ky);
-        options = optimset('Display', 'off', 'TolX', tol, 'TolFun', tol);
+        options = optimset('Display', 'off', 'TolX', tol, 'TolFun', tol, 'MaxFunEvals', 2e4, 'MaxIter', 2e4);
         [x_opt_pinf, fval_pinf] = fminsearch(objfun_pinf, x0_pinf, options);
         optimal_pinf_nu{case_idx}(i,:) = x_opt_pinf;
         contraction_pinf_nu{case_idx}(i) = fval_pinf;
         x0_pinf = x_opt_pinf;
+    end
+end
+
+%% --- Second pass: cross-initialize gamma- and nu-sweeps ------------------
+
+% helper: nearest index
+idx_near = @(v,x) find(abs(v - x) == min(abs(v - x)), 1, 'first');
+
+options = optimset('Display','off','TolX',tol,'TolFun',tol, 'MaxFunEvals', 2e4, 'MaxIter', 2e4);
+
+% Base fallback (in case a lookup is NaN)
+x_fallback = [1/c, 0];
+
+% --- Refine gamma-varying cases using nu-sweep results as init ------------
+for case_idx = 1:num_gamma_cases
+    nu_fixed = nu_fixed_values(case_idx);
+
+    % where in the nu-sweep rows is this nu?
+    inu = idx_near(nu_values, nu_fixed);
+
+    % reuse arrays, overwrite with refined values
+    for i = 1:length(gamma_values)
+        g = gamma_values(i);
+
+        % pick the nu-sweep case whose gamma_fixed is closest to this g
+        icase_from_nu = idx_near(gamma_fixed_values, g);
+
+        x0_cross = optimal_pinf_nu{icase_from_nu}(inu, :);
+        if any(~isfinite(x0_cross)), x0_cross = x_fallback; end
+
+        objfun = @(x) obj_Linf(N, T, dt, J, c, g, nu_fixed, a, M, x(1), x(2), ky);
+        [x_opt, fval] = fminsearch(objfun, x0_cross, options);
+
+        optimal_pinf_gamma{case_idx}(i,:)   = x_opt;
+        contraction_pinf_gamma{case_idx}(i) = fval;
+    end
+end
+
+% --- Refine nu-varying cases using gamma-sweep results as init ------------
+for case_idx = 1:num_nu_cases
+    gamma_fixed = gamma_fixed_values(case_idx);
+
+    % where in the gamma-sweep rows is this gamma?
+    ig = idx_near(gamma_values, gamma_fixed);
+
+    for i = 1:length(nu_values)
+        nu = nu_values(i);
+
+        % pick the gamma-sweep case whose nu_fixed is closest to this nu
+        icase_from_gamma = idx_near(nu_fixed_values, nu);
+
+        x0_cross = optimal_pinf_gamma{icase_from_gamma}(ig, :);
+        if any(~isfinite(x0_cross)), x0_cross = x_fallback; end
+
+        objfun = @(x) obj_Linf(N, T, dt, J, c, gamma_fixed, nu, a, M, x(1), x(2), ky);
+        [x_opt, fval] = fminsearch(objfun, x0_cross, options);
+
+        optimal_pinf_nu{case_idx}(i,:)   = x_opt;
+        contraction_pinf_nu{case_idx}(i) = fval;
+    end
+end
+
+%% --- Lossless reconcile on overlap, no trimming, no forced re-opt ----
+tol_match = 1e-12;
+% exact index match when grids are identical
+[tfG, ig_map] = ismembertol(gamma_fixed_values(:), gamma_values(:), tol_match, 'ByRows', false);
+[tfV, iv_map] = ismembertol(nu_fixed_values(:),    nu_values(:),    tol_match, 'ByRows', false);
+
+for ig_fix = 1:numel(gamma_fixed_values)
+    if ~tfG(ig_fix), continue; end
+    ig_gam = ig_map(ig_fix);        % column in gamma sweep
+    for iv_fix = 1:numel(nu_fixed_values)
+        if ~tfV(iv_fix), continue; end
+        iv_nu = iv_map(iv_fix);     % column in nu sweep
+
+        % read both candidates
+        xg = optimal_pinf_gamma{iv_fix}(ig_gam,:);  rg = contraction_pinf_gamma{iv_fix}(ig_gam);
+        xn = optimal_pinf_nu{ig_fix}(iv_nu,:);      rn = contraction_pinf_nu{ig_fix}(iv_nu);
+
+        hasG = all(isfinite(xg)) && isfinite(rg);
+        hasN = all(isfinite(xn)) && isfinite(rn);
+
+        if ~hasG && ~hasN
+            % nothing to do
+            continue
+        elseif hasG && ~hasN
+            % copy gamma→nu
+            optimal_pinf_nu{ig_fix}(iv_nu,:)   = xg;
+            contraction_pinf_nu{ig_fix}(iv_nu) = rg;
+        elseif ~hasG && hasN
+            % copy nu→gamma
+            optimal_pinf_gamma{iv_fix}(ig_gam,:)   = xn;
+            contraction_pinf_gamma{iv_fix}(ig_gam) = rn;
+        else
+            % both exist: keep the better contraction
+            if rn < rg
+                optimal_pinf_gamma{iv_fix}(ig_gam,:)   = xn;
+                contraction_pinf_gamma{iv_fix}(ig_gam) = rn;
+            elseif rg < rn
+                optimal_pinf_nu{ig_fix}(iv_nu,:)   = xg;
+                contraction_pinf_nu{ig_fix}(iv_nu) = rg;
+            else
+                % equal rho: choose the one with smaller norm as tie-break
+                if norm(xn) < norm(xg)
+                    optimal_pinf_gamma{iv_fix}(ig_gam,:)   = xn;
+                    contraction_pinf_gamma{iv_fix}(ig_gam) = rn;
+                else
+                    optimal_pinf_nu{ig_fix}(iv_nu,:)   = xg;
+                    contraction_pinf_nu{ig_fix}(iv_nu) = rg;
+                end
+            end
+        end
     end
 end
 
@@ -286,6 +398,84 @@ grid on;
 ylim([1e-3, 1]);
 % Make tick labels bigger
 set(gca, 'FontSize', 18);
+
+%% ===== FIGURE 3: gamma-sweep joint view =====
+G  = gamma_values(:)';                 % 1 x Ng
+V  = nu_fixed_values(:)';              % 1 x Nv
+Ng = numel(G);  Nv = numel(V);
+
+rho_gam = zeros(Nv, Ng);  p_gam = zeros(Nv, Ng);  q_gam = zeros(Nv, Ng);
+for ic = 1:Nv
+    rho_gam(ic,:) = contraction_pinf_gamma{ic}(:).';
+    p_gam(ic,:)   = optimal_pinf_gamma{ic}(:,1).';
+    q_gam(ic,:)   = optimal_pinf_gamma{ic}(:,2).';
+end
+
+p_all_g = p_gam(:);  q_all_g = q_gam(:);  rho_all_g = rho_gam(:);
+
+figure('Name','Figure 3: gamma and nu sweep','Position',[100,100,1200,520]);
+
+% LEFT: (p,q) area
+subplot(2,2,1); hold on;
+mask = isfinite(p_all_g) & isfinite(q_all_g) & isfinite(rho_all_g) & (rho_all_g < 1);
+p = p_all_g(mask); q = q_all_g(mask); r = rho_all_g(mask);
+scatter(p, q, 10, log10(r), 'filled', 'MarkerFaceAlpha', 0.35);
+colormap(parula); cb = colorbar; cb.Label.Interpreter = 'latex';
+cb.Label.String = '$\log_{10}(\rho_\infty^\star)$';
+xlabel('p'); ylabel('q'); title('Optimal $(p,q)$ region (gamma-sweep)','Interpreter','latex');
+grid on; box on; set(gca,'FontSize',16);
+try, K = boundary(p,q,0.99); plot(p(K),q(K),'k-','LineWidth',1.3); end
+% padx=0.05*(max(p)-min(p)+eps); pady=0.05*(max(q)-min(q)+eps);
+% xlim([min(p)-padx, max(p)+padx]); ylim([min(q)-pady, max(q)+pady]);
+xlim([0, 1.5])
+ylim([-4, 8])
+
+% % RIGHT: contour over (gamma, nu_fixed); Z is Nv x Ng
+% subplot(1,2,2);
+% contourf(G, V, log10(rho_gam), 20, 'LineColor','none');
+% colormap(parula); cb = colorbar; cb.Label.Interpreter = 'latex';
+% cb.Label.String = '$\log_{10}(\rho_\infty^\star)$';
+% xlabel('\gamma'); ylabel('\nu'); title('Optimal contraction (gamma-sweep grid)','Interpreter','latex');
+% grid on; box on; set(gca,'FontSize',16);
+
+%% ===== FIGURE 4: nu-sweep joint view =====
+Gf  = gamma_fixed_values(:)';          % 1 x Ngf
+Vn  = nu_values(:)';                   % 1 x Nn
+Ngf = numel(Gf);  Nn = numel(Vn);
+
+rho_nu = zeros(Ngf, Nn);  p_nu = zeros(Ngf, Nn);  q_nu = zeros(Ngf, Nn);
+for ic = 1:Ngf
+    rho_nu(ic,:) = contraction_pinf_nu{ic}(:).';
+    p_nu(ic,:)   = optimal_pinf_nu{ic}(:,1).';
+    q_nu(ic,:)   = optimal_pinf_nu{ic}(:,2).';
+end
+
+p_all_n = p_nu(:);  q_all_n = q_nu(:);  rho_all_n = rho_nu(:);
+
+% figure('Name','Figure 4: nu-sweep','Position',[100,100,1200,520]);
+
+% LEFT: (p,q) area
+subplot(2,2,3); hold on;
+mask = isfinite(p_all_n) & isfinite(q_all_n) & isfinite(rho_all_n) & (rho_all_n < 1);
+p = p_all_n(mask); q = q_all_n(mask); r = rho_all_n(mask);
+scatter(p, q, 10, log10(r), 'filled', 'MarkerFaceAlpha', 0.35);
+colormap(parula); cb = colorbar; cb.Label.Interpreter = 'latex';
+cb.Label.String = '$\log_{10}(\rho_\infty^\star)$';
+xlabel('p'); ylabel('q'); title('Optimal $(p,q)$ region (nu-sweep)','Interpreter','latex');
+grid on; box on; set(gca,'FontSize',16);
+try, K = boundary(p,q,0.99); plot(p(K),q(K),'k-','LineWidth',1.3); end
+% padx=0.05*(max(p)-min(p)+eps); pady=0.05*(max(q)-min(q)+eps);
+% xlim([min(p)-padx, max(p)+padx]); ylim([min(q)-pady, max(q)+pady]);
+xlim([0, 1.5])
+ylim([-4, 8])
+
+% RIGHT: contour over (gamma_fixed, nu); need Z of size [length(Vn) x length(Gf)]
+subplot(2,2,[2 4]);
+contourf(Gf, Vn, log10(rho_nu.'), 20, 'LineColor','none');  % transpose once
+colormap(parula); cb = colorbar; cb.Label.Interpreter = 'latex';
+cb.Label.String = '$\log_{10}(\rho_\infty^\star)$';
+xlabel('\gamma'); ylabel('\nu'); title('Optimal contraction (nu-sweep grid)','Interpreter','latex');
+grid on; box on; set(gca,'FontSize',16);
 
 %% Helper functions (unchanged)
 
