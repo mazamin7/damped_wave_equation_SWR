@@ -33,7 +33,7 @@ function res_surface = swr_residual_surface_1D(N, a, M, T, c, dh, dt, gamma, nu,
     
     % Create the final initial condition function
     u0 = @(x) gaussian_normalized(x) + sine_sum_normalized(x);
-    v0 = @(x) 0;
+    v0 = @(x) 0.*x;
 
 
     dt = dh/c;     % Calculate time step
@@ -47,7 +47,7 @@ function res_surface = swr_residual_surface_1D(N, a, M, T, c, dh, dt, gamma, nu,
     current_iteration = 0;
     
     Nx = round(Lx / dh) + 1;
-    Nt = floor(T / dt);
+    Nt = round(T / dt) + 1;
 
     u_init = rand(Nx,Nt);
     % u_init = zeros(Nx,Nt);

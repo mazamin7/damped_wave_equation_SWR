@@ -11,16 +11,17 @@ M = 0.1;
 % Lx = N*a + M; % automatically determined
 T = 5;
 c = 1.0;
-dh = 0.01;
-dt = 0.01;
-% dh = 0.001;
-% dt = 0.001;
+% dh = 0.01;
+% dt = 0.01;
+dh = 0.001;
+dt = 0.001;
 
 % Viscous damping case
 % gamma = 0.1;
-% gamma = 1;
+% gamma = 0.3;
+gamma = 1;
 % gamma = 10;
-gamma = 100;
+% gamma = 100;
 % gamma = 1000;
 nu = 0;
 % k = 10;
@@ -29,11 +30,13 @@ k = 5*N;
 
 % % Viscoelastic damping case
 % gamma = 0;
+% % nu = 0.01;
+% nu = 0.1;
 % % nu = 1;
 % % nu = 2;
 % % nu = 5;
 % % nu = 10;
-% nu = 100;
+% % nu = 100;
 % % k = 10;
 % k = 5*N;
 
@@ -41,14 +44,14 @@ k = 5*N;
 % theta1_range = linspace(0, 1.2, 25);
 % theta2_range = linspace(-4, 8, 25);
 
-% theta1_range = linspace(0, 1.2, 13);
-% theta2_range = linspace(-4, 8, 13);
+theta1_range = linspace(0, 1.2, 13);
+theta2_range = linspace(-4, 8, 13);
 
 % theta1_range = linspace(0, 5, 21);
 % theta2_range = linspace(0, 10, 21);
 
-theta1_range = linspace(0, 5, 21);
-theta2_range = linspace(0, 20, 21);
+% theta1_range = linspace(0, 5, 21);
+% theta2_range = linspace(0, 20, 21);
 
 % % for debug
 % theta1_range = linspace(0, 1.2, 1);
