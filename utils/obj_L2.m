@@ -4,7 +4,7 @@ function val = obj_L2(N, T, dt, J, c, gamma, nu, a, M, theta1, theta2, ky)
     b = a + M;
     
     % Frequency grid
-    omega_min = 2*pi / T;
+    omega_min = pi / T;
     omega_max = pi / dt;
     omegas = linspace(omega_min, omega_max, J);
     s_vals = 1i * omegas;

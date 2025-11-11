@@ -11,15 +11,15 @@ M = 0.1;
 % Lx = N*a + M; % automatically determined
 T = 5;
 c = 1.0;
-% dh = 0.01;
-% dt = 0.01;
-dh = 0.001;
-dt = 0.001;
+dh = 0.01;
+dt = 0.01;
+% dh = 0.001;
+% dt = 0.001;
 
 % Viscous damping case
 % gamma = 0.1;
-% gamma = 0.3;
-gamma = 1;
+gamma = 0.3;
+% gamma = 1;
 % gamma = 10;
 % gamma = 100;
 % gamma = 1000;
@@ -127,7 +127,7 @@ ylabel('q', 'FontSize', 16);
 % title('Log-scale Error Surface');
 legend('show', 'Location', 'NorthEast', 'FontSize', 14);
 colormap('parula');
-% clim([-7,3])
+% clim([-5,3])
 % clim([-4,3])
 % Make tick labels bigger
 set(gca, 'FontSize', 18);

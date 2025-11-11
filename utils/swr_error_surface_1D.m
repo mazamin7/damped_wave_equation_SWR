@@ -1,4 +1,4 @@
-function res_surface = swr_residual_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k, THETA1, THETA2)
+function res_surface = swr_error_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k, THETA1, THETA2)
     % SWR_RESIDUAL_SURFACE - Parameter sweep over theta1, theta2
     % Input: explicit parameters + THETA1, THETA2 grids
     % Output: final residuals for each parameter combination
@@ -36,7 +36,7 @@ function res_surface = swr_residual_surface_1D(N, a, M, T, c, dh, dt, gamma, nu,
     v0 = @(x) 0.*x;
 
 
-    dt = dh/c;     % Calculate time step
+    % dt = dh/c;     % Calculate time step
     u_ref = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
     
     % Get dimensions from input matrices
