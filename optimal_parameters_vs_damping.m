@@ -18,24 +18,19 @@ J = 50;         % Number of frequency steps
 
 % Optimization parameters
 tol = 1e-9;
-
-% Boundary
 tightness = 0.5;
 
 %% Define parameter sweep cases
-% Cases: Varying gamma with different fixed nu values
-% gamma_values = 1./2.^(6:-0.1:-3);
-% nu_fixed_values = 1./2.^(6:-0.5:-3);
-gamma_values = logspace(-2,1,91);
-nu_fixed_values = logspace(-2,1,31);
-num_gamma_cases = length(nu_fixed_values);
-
-% Cases: Varying nu with different fixed gamma values  
+% Use log-spaced values for better coverage
+gamma_values = logspace(-2, 1, 91);
 nu_values = gamma_values;
+nu_fixed_values = logspace(-2, 1, 31);
 gamma_fixed_values = nu_fixed_values;
+
+num_gamma_cases = length(nu_fixed_values);
 num_nu_cases = length(gamma_fixed_values);
 
-%% Initialize storage arrays for L∞ results
+%% Initialize storage arrays
 optimal_pinf_gamma = cell(num_gamma_cases, 1);
 contraction_pinf_gamma = cell(num_gamma_cases, 1);
 optimal_pinf_nu = cell(num_nu_cases, 1);
@@ -45,70 +40,57 @@ contraction_pinf_nu = cell(num_nu_cases, 1);
 optim_options = optimset('Display', 'off', 'TolX', tol, 'TolFun', tol, ...
                         'MaxFunEvals', 2e4, 'MaxIter', 2e4);
 
-%% Process gamma-varying cases
-fprintf('=== Processing gamma-Varying Cases (L∞ only) ===\n');
+%% Helper functions
+find_nearest_index = @(v, x) find(abs(v - x) == min(abs(v - x)), 1, 'first');
+x_fallback = [1/c, 0];
 
+%% Process parameter sweeps
+fprintf('=== Processing gamma-Varying Cases (L∞ only) ===\n');
 for case_idx = 1:num_gamma_cases
     nu_fixed = nu_fixed_values(case_idx);
     fprintf('\n=== Case %d: Varying gamma (nu = %.2f) ===\n', case_idx, nu_fixed);
     
-    % Initialize arrays for this case
-    n_gamma = length(gamma_values);
-    optimal_pinf_gamma{case_idx} = zeros(n_gamma, 2);
-    contraction_pinf_gamma{case_idx} = zeros(n_gamma, 1);
-    
-    % Initial guess
+    optimal_pinf_gamma{case_idx} = zeros(length(gamma_values), 2);
+    contraction_pinf_gamma{case_idx} = zeros(length(gamma_values), 1);
     x0 = [1/c, 0];
     
-    for i = 1:n_gamma
+    for i = 1:length(gamma_values)
         gamma = gamma_values(i);
-        fprintf('Computing L∞ for gamma = %.3f (%d/%d)\n', gamma, i, n_gamma);
+        fprintf('Computing L∞ for gamma = %.3f (%d/%d)\n', gamma, i, length(gamma_values));
         
-        % L∞ optimization
         objfun = @(x) obj_Linf(N, T, dt, J, c, gamma, nu_fixed, a, M, x(1), x(2), ky);
         [x_opt, fval] = fminsearch(objfun, x0, optim_options);
         
         optimal_pinf_gamma{case_idx}(i,:) = x_opt;
         contraction_pinf_gamma{case_idx}(i) = fval;
-        x0 = x_opt; % Use result as next initial guess
+        x0 = x_opt;
     end
 end
 
-%% Process nu-varying cases
 fprintf('\n=== Processing nu-Varying Cases (L∞ only) ===\n');
-
 for case_idx = 1:num_nu_cases
     gamma_fixed = gamma_fixed_values(case_idx);
     fprintf('\n=== Case %d: Varying nu (gamma = %.2f) ===\n', case_idx, gamma_fixed);
     
-    % Initialize arrays for this case
-    n_nu = length(nu_values);
-    optimal_pinf_nu{case_idx} = zeros(n_nu, 2);
-    contraction_pinf_nu{case_idx} = zeros(n_nu, 1);
-    
-    % Initial guess
+    optimal_pinf_nu{case_idx} = zeros(length(nu_values), 2);
+    contraction_pinf_nu{case_idx} = zeros(length(nu_values), 1);
     x0 = [1/c, 0];
     
-    for i = 1:n_nu
+    for i = 1:length(nu_values)
         nu = nu_values(i);
-        fprintf('Computing L∞ for nu = %.3f (%d/%d)\n', nu, i, n_nu);
+        fprintf('Computing L∞ for nu = %.3f (%d/%d)\n', nu, i, length(nu_values));
         
-        % L∞ optimization
         objfun = @(x) obj_Linf(N, T, dt, J, c, gamma_fixed, nu, a, M, x(1), x(2), ky);
         [x_opt, fval] = fminsearch(objfun, x0, optim_options);
         
         optimal_pinf_nu{case_idx}(i,:) = x_opt;
         contraction_pinf_nu{case_idx}(i) = fval;
-        x0 = x_opt; % Use result as next initial guess
+        x0 = x_opt;
     end
 end
 
 %% Cross-initialization refinement
 fprintf('\n=== Cross-initialization Refinement ===\n');
-
-% Helper function to find nearest index
-find_nearest_index = @(v, x) find(abs(v - x) == min(abs(v - x)), 1, 'first');
-x_fallback = [1/c, 0]; % Fallback initial guess
 
 % Refine gamma-varying cases using nu-sweep results
 for case_idx = 1:num_gamma_cases
@@ -117,14 +99,10 @@ for case_idx = 1:num_gamma_cases
     
     for i = 1:length(gamma_values)
         gamma = gamma_values(i);
-        
-        % Find corresponding nu-sweep case
         nu_case_idx = find_nearest_index(gamma_fixed_values, gamma);
         x0 = optimal_pinf_nu{nu_case_idx}(nu_index, :);
         
-        if any(~isfinite(x0))
-            x0 = x_fallback;
-        end
+        if any(~isfinite(x0)), x0 = x_fallback; end
         
         objfun = @(x) obj_Linf(N, T, dt, J, c, gamma, nu_fixed, a, M, x(1), x(2), ky);
         [x_opt, fval] = fminsearch(objfun, x0, optim_options);
@@ -141,14 +119,10 @@ for case_idx = 1:num_nu_cases
     
     for i = 1:length(nu_values)
         nu = nu_values(i);
-        
-        % Find corresponding gamma-sweep case
         gamma_case_idx = find_nearest_index(nu_fixed_values, nu);
         x0 = optimal_pinf_gamma{gamma_case_idx}(gamma_index, :);
         
-        if any(~isfinite(x0))
-            x0 = x_fallback;
-        end
+        if any(~isfinite(x0)), x0 = x_fallback; end
         
         objfun = @(x) obj_Linf(N, T, dt, J, c, gamma_fixed, nu, a, M, x(1), x(2), ky);
         [x_opt, fval] = fminsearch(objfun, x0, optim_options);
@@ -162,8 +136,6 @@ end
 fprintf('\n=== Reconciling Overlapping Points ===\n');
 
 tol_match = 1e-12;
-
-% Find matching indices between fixed values and sweep values
 [gamma_match, gamma_indices] = ismembertol(gamma_fixed_values, gamma_values, tol_match);
 [nu_match, nu_indices] = ismembertol(nu_fixed_values, nu_values, tol_match);
 
@@ -173,33 +145,26 @@ for gamma_fix_idx = 1:length(gamma_fixed_values)
     for nu_fix_idx = 1:length(nu_fixed_values)
         if ~nu_match(nu_fix_idx), continue; end
         
-        % Get corresponding indices in sweep arrays
         gamma_sweep_idx = gamma_indices(gamma_fix_idx);
         nu_sweep_idx = nu_indices(nu_fix_idx);
         
-        % Get both candidate solutions
         x_gamma = optimal_pinf_gamma{nu_fix_idx}(gamma_sweep_idx, :);
         rho_gamma = contraction_pinf_gamma{nu_fix_idx}(gamma_sweep_idx);
-        
         x_nu = optimal_pinf_nu{gamma_fix_idx}(nu_sweep_idx, :);
         rho_nu = contraction_pinf_nu{gamma_fix_idx}(nu_sweep_idx);
         
-        % Check validity of solutions
         gamma_valid = all(isfinite(x_gamma)) && isfinite(rho_gamma);
         nu_valid = all(isfinite(x_nu)) && isfinite(rho_nu);
         
         if ~gamma_valid && ~nu_valid
             continue;
         elseif gamma_valid && ~nu_valid
-            % Copy gamma solution to nu
             optimal_pinf_nu{gamma_fix_idx}(nu_sweep_idx, :) = x_gamma;
             contraction_pinf_nu{gamma_fix_idx}(nu_sweep_idx) = rho_gamma;
         elseif ~gamma_valid && nu_valid
-            % Copy nu solution to gamma
             optimal_pinf_gamma{nu_fix_idx}(gamma_sweep_idx, :) = x_nu;
             contraction_pinf_gamma{nu_fix_idx}(gamma_sweep_idx) = rho_nu;
         else
-            % Both valid - choose the better one
             if rho_nu < rho_gamma
                 optimal_pinf_gamma{nu_fix_idx}(gamma_sweep_idx, :) = x_nu;
                 contraction_pinf_gamma{nu_fix_idx}(gamma_sweep_idx) = rho_nu;
@@ -207,7 +172,6 @@ for gamma_fix_idx = 1:length(gamma_fixed_values)
                 optimal_pinf_nu{gamma_fix_idx}(nu_sweep_idx, :) = x_gamma;
                 contraction_pinf_nu{gamma_fix_idx}(nu_sweep_idx) = rho_gamma;
             else
-                % Equal contraction - choose smaller norm as tie-breaker
                 if norm(x_nu) < norm(x_gamma)
                     optimal_pinf_gamma{nu_fix_idx}(gamma_sweep_idx, :) = x_nu;
                     contraction_pinf_gamma{nu_fix_idx}(gamma_sweep_idx) = rho_nu;
@@ -220,27 +184,11 @@ for gamma_fix_idx = 1:length(gamma_fixed_values)
     end
 end
 
-%% Create fine 200x200 grid for global contraction factor
+%% Create fine grid for global contraction factor
 fprintf('\n=== Creating Fine Grid for Global Contraction Factor ===\n');
 
-% Use the full sweep ranges
-gamma_fine = gamma_values;
-nu_fine = nu_values;
-
-% Initialize the fine grid
-contraction_fine = zeros(length(gamma_values), length(nu_values));
-p_fine = zeros(length(gamma_values), length(nu_values));
-q_fine = zeros(length(gamma_values), length(nu_values));
-
-% Create interpolation from existing data
-fprintf('Interpolating data to create fine grid...\n');
-
 % Collect all data points for interpolation
-all_gamma = [];
-all_nu = [];
-all_contraction = [];
-all_p = [];
-all_q = [];
+all_gamma = []; all_nu = []; all_contraction = []; all_p = []; all_q = [];
 
 % Add gamma-sweep data
 for case_idx = 1:num_gamma_cases
@@ -276,7 +224,7 @@ F_p = scatteredInterpolant(all_gamma, all_nu, all_p, 'natural', 'none');
 F_q = scatteredInterpolant(all_gamma, all_nu, all_q, 'natural', 'none');
 
 % Create meshgrid for fine interpolation
-[GAMMA, NU] = meshgrid(gamma_fine, nu_fine);
+[GAMMA, NU] = meshgrid(gamma_values, nu_values);
 
 % Interpolate onto fine grid
 fprintf('Performing interpolation...\n');
@@ -287,8 +235,8 @@ q_fine = F_q(GAMMA, NU);
 % Find minimum contraction factor
 [min_contraction, min_idx] = min(contraction_fine(:));
 [min_row, min_col] = ind2sub(size(contraction_fine), min_idx);
-min_gamma = gamma_fine(min_col);
-min_nu = nu_fine(min_row);
+min_gamma = gamma_values(min_col);
+min_nu = nu_values(min_row);
 min_p = p_fine(min_row, min_col);
 min_q = q_fine(min_row, min_col);
 
@@ -296,14 +244,13 @@ fprintf('Minimum contraction factor: %.6f\n', min_contraction);
 fprintf('At gamma=%.3f, nu=%.3f\n', min_gamma, min_nu);
 fprintf('Optimal parameters: p=%.6f, q=%.6f\n', min_p, min_q);
 
-%% Plot results - Basic figures
+%% Plot results
 plot_basic_figures(gamma_values, nu_fixed_values, optimal_pinf_gamma, contraction_pinf_gamma, ...
                    nu_values, gamma_fixed_values, optimal_pinf_nu, contraction_pinf_nu);
 
-%% Plot results - Joint view figures with boundaries
 plot_joint_view_figures(gamma_values, nu_fixed_values, optimal_pinf_gamma, contraction_pinf_gamma, ...
                         nu_values, gamma_fixed_values, optimal_pinf_nu, contraction_pinf_nu, ...
-                        gamma_fine, nu_fine, contraction_fine, tightness);
+                        gamma_values, nu_values, contraction_fine, tightness);
 
 %% Helper function for basic plotting
 function plot_basic_figures(gamma_vals, nu_fixed_vals, opt_gamma, contr_gamma, ...
@@ -549,20 +496,8 @@ function plot_joint_view_figures(gamma_vals, nu_fixed_vals, opt_gamma, contr_gam
     % Contour plot - USING LOG-LOG SCALE
     figure('Name', 'Fine Grid Contraction Factor - Log Scale', 'Position', [100, 100, 800, 600]);
     
-    % Create log-spaced gamma and nu values for better visualization in log scale
-    gamma_log = gamma_fine; % From 0.01 to 6
-    nu_log = nu_fine;    % From 0.01 to 6
-    
-    % Create meshgrid for log interpolation
-    [GAMMA_log, NU_log] = meshgrid(gamma_log, nu_log);
-    
-    % Interpolate onto log grid (using the same scattered interpolant)
-    % Note: You might need to recreate the interpolant here if it's not available
-    % For now, using the existing contraction_fine and resampling
-    contraction_log = interp2(gamma_fine, nu_fine, contraction_fine, GAMMA_log, NU_log, 'linear', 1);
-    
     % Create contour plot with log-log scale
-    contourf(GAMMA_log, NU_log, log10(contraction_log), 20, 'LineColor', 'none');
+    contourf(gamma_fine, nu_fine, log10(contraction_fine), 20, 'LineColor', 'none');
     colormap(parula);
     colorbar;
     
@@ -580,8 +515,6 @@ function plot_joint_view_figures(gamma_vals, nu_fixed_vals, opt_gamma, contr_gam
     set(gca, 'XMinorGrid', 'on', 'YMinorGrid', 'on');
     
     % Set appropriate axis limits for log scale
-    % xlim([0.01, 6]);
-    xlim([1e-2,1e1]);
-    % ylim([0.01, 6]);
-    ylim([1e-2,1e1]);
+    xlim([1e-2, 1e1]);
+    ylim([1e-2, 1e1]);
 end
