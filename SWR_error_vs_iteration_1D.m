@@ -14,10 +14,10 @@ Lx = N*a + M;
 
 % Parameters
 c = 1;              % Wave speed
-% dh = 0.01;          % Spatial step in x
-% dt = 0.01;
-dh = 0.001;
-dt = 0.001;
+dh = 0.01;          % Spatial step in x
+dt = 0.01;
+% dh = 0.001;
+% dt = 0.001;
 
 
 % Initial conditions components
@@ -45,25 +45,10 @@ sine_sum_normalized = @(x) arrayfun(@(xi) sum(sin((1:n_max)' * pi * xi / Lx)) / 
 
 % Create the final initial condition function
 u0 = @(x) gaussian_normalized(x) + sine_sum_normalized(x);
-v0 = @(x) 0;
+v0 = @(x) 0.*x;
 
 
 % Define multiple test cases
-
-% % viscous damping case T1
-% gamma = 0.1;
-% nu = 0;
-% % T = 1;
-% T = 5;
-% theta_sets = [
-%     1/c,     0;      % Initial guess
-%     0.6,     8;      % Numerical optimization
-%     1,       2; % Spectral optimization p=2
-%     1,       0  % Spectral optimization p=∞
-% ];
-% % k = 10;
-% % k = 80;
-% k = 40*N;
 
 % % viscous damping case T1
 % gamma = 1;
@@ -72,138 +57,60 @@ v0 = @(x) 0;
 % T = 5;
 % theta_sets = [
 %     1/c,     0;      % Initial guess
-%     0.5,     4.5;      % Numerical optimization
-%     1,       4.5; % Spectral optimization p=2
-%     1,       1  % Spectral optimization p=∞
+%     0.45,    1.5;    % Numerical optimization
+%     1,       1.5;    % Spectral optimization p=2
+%     1,       0.5     % Spectral optimization p=∞
 % ];
 % % k = 10;
 % % k = 80;
 % k = 40*N;
 
-% % viscous damping case T1
-% gamma = 10;
-% nu = 0;
-% % T = 1;
-% T = 5;
-% theta_sets = [
-%     1/c,     0;      % Initial guess
-%     1.8,     8;      % Numerical optimization
-%     1,       4; % Spectral optimization p=2
-%     1,       4  % Spectral optimization p=∞
-% ];
-% % k = 10;
-% % k = 80;
-% k = 40*N;
-
-% % viscous damping case T1
-% gamma = 100;
-% nu = 0;
-% % T = 1;
-% T = 5;
-% theta_sets = [
-%     1/c,     0;      % Initial guess
-%     0,       20;      % Numerical optimization
-%     4,       8.5; % Spectral optimization p=2
-%     4.75,    8  % Spectral optimization p=∞
-% ];
-% % k = 10;
-% % k = 80;
-% k = 40*N;
-
-% % viscous damping case T1
-% gamma = 1000;
-% nu = 0;
-% % T = 1;
-% T = 5;
-% theta_sets = [
-%     1/c,     0;      % Initial guess
-%     0.8,     10;      % Numerical optimization
-%     2,       20; % Spectral optimization p=2
-%     2,       20  % Spectral optimization p=∞
-% ];
-% % k = 10;
-% % k = 80;
-% k = 40*N;
-
-% % viscoelastic damping case T1
-% gamma = 0;
-% nu = 1;
-% % T = 1;
-% T = 5;
-% theta_sets = [
-%     1/c,     0;      % Initial guess
-%     0.1,     4; % Numerical optimization
-%     0.05,    5; % Spectral optimization p=2
-%     0.05,    4  % Spectral optimization p=∞
-% ];
-% % k = 10;
-% % k = 80;
-% % k = 40*N;
-% k = 40*N;
-
-% % viscoelastic damping case T1
-% gamma = 0;
-% nu = 2;
-% % T = 1;
-% T = 5;
-% theta_sets = [
-%     1/c,     0;      % Initial guess
-%     0.05,    3; % Numerical optimization
-%     0.05,    4; % Spectral optimization p=2
-%     0.05,    4  % Spectral optimization p=∞
-% ];
-% % k = 10;
-% % k = 80;
-% % k = 40*N;
-% k = 40*N;
-
-% % viscoelastic damping case T1
-% gamma = 0;
-% nu = 5;
-% % T = 1;
-% T = 5;
-% theta_sets = [
-%     1/c,     0;      % Initial guess
-%     0,       5.5; % Numerical optimization
-%     0.05,    4; % Spectral optimization p=2
-%     0,       6  % Spectral optimization p=∞
-% ];
-% % k = 10;
-% % k = 80;
-% % k = 40*N;
-% k = 40*N;
-
-% % viscoelastic damping case T1
-% gamma = 0;
-% nu = 10;
-% % T = 1;
-% T = 5;
-% theta_sets = [
-%     1/c,     0;      % Initial guess
-%     0,       5; % Numerical optimization
-%     0,       4; % Spectral optimization p=2
-%     0,       5  % Spectral optimization p=∞
-% ];
-% % k = 10;
-% % k = 80;
-% % k = 40*N;
-% k = 40*N;
-
-% viscoelastic damping case T1
-gamma = 0;
-nu = 100;
+% viscous damping case T1
+gamma = 5;
+nu = 0;
 % T = 1;
 T = 5;
 theta_sets = [
     1/c,     0;      % Initial guess
-    0,       4.5; % Numerical optimization
-    0,       3.5; % Spectral optimization p=2
-    0,       3.5  % Spectral optimization p=∞
+    0.8,     0.5;      % Numerical optimization
+    1,       2.5; % Spectral optimization p=2
+    1.05,    2.5  % Spectral optimization p=∞
 ];
 % k = 10;
 % k = 80;
-% k = 40*N;
 k = 40*N;
+
+% % viscoelastic damping case T1
+% gamma = 0;
+% nu = 0.1;
+% % T = 1;
+% T = 5;
+% theta_sets = [
+%     1/c,     0;      % Initial guess
+%     0.55,    2;   % Numerical optimization
+%     0.55,    2.5; % Spectral optimization p=2
+%     0.5,     2    % Spectral optimization p=∞
+% ];
+% % k = 10;
+% % k = 80;
+% % k = 40*N;
+% k = 40*N;
+
+% % viscoelastic damping case T1
+% gamma = 0;
+% nu = 0.5;
+% % T = 1;
+% T = 5;
+% theta_sets = [
+%     1/c,     0;      % Initial guess
+%     0.15,    3.5; % Numerical optimization
+%     0.1,     5;   % Spectral optimization p=2
+%     0.15,    3.5  % Spectral optimization p=∞
+% ];
+% % k = 10;
+% % k = 80;
+% % k = 40*N;
+% k = 40*N;
 
 
 disp(T*c/M)
@@ -218,7 +125,7 @@ fprintf('Computing reference FDTD solution...\n');
 u_ref = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
 
 Nx = round(Lx / dh) + 1;
-Nt = floor(T / dt);
+Nt = round(T / dt) + 1;
 
 u_init = rand(Nx,Nt);
 
@@ -258,13 +165,14 @@ end
 
 xlabel('Iteration','FontSize', 16);
 ylabel('Error','FontSize', 16);
+xlim([0,k])
 xticks(0:10:k)
 ylim([1e-15,1e5])
 yticks([1e-15,1e-10,1e-5,1e0,1e5])
 % title('WR Convergence with Different Robin Interface Parameters', 'FontSize', 24);
 
-legend(legend_labels{1:numSets}, 'Location', 'NorthEast', 'FontSize', 14);
-% legend(legend_labels{1:numSets}, 'Location', 'SouthWest', 'FontSize', 14);
+% legend(legend_labels{1:numSets}, 'Location', 'NorthEast', 'FontSize', 14);
+legend(legend_labels{1:numSets}, 'Location', 'SouthWest', 'FontSize', 14);
 grid on;
 
 % Make tick labels bigger

@@ -18,8 +18,9 @@ dt = 0.01;
 
 % Viscous damping case
 % gamma = 0.1;
-gamma = 0.3;
+% gamma = 0.3;
 % gamma = 1;
+gamma = 5;
 % gamma = 10;
 % gamma = 100;
 % gamma = 1000;
@@ -32,6 +33,7 @@ k = 5*N;
 % gamma = 0;
 % % nu = 0.01;
 % nu = 0.1;
+% % nu = 0.5;
 % % nu = 1;
 % % nu = 2;
 % % nu = 5;
@@ -41,11 +43,11 @@ k = 5*N;
 % k = 5*N;
 
 % Parameter ranges
-% theta1_range = linspace(0, 1.2, 25);
-% theta2_range = linspace(-4, 8, 25);
+theta1_range = linspace(0, 1.2, 25);
+theta2_range = linspace(-4, 8, 25);
 
-theta1_range = linspace(0, 1.2, 13);
-theta2_range = linspace(-4, 8, 13);
+% theta1_range = linspace(0, 1.2, 13);
+% theta2_range = linspace(-4, 8, 13);
 
 % theta1_range = linspace(0, 5, 21);
 % theta2_range = linspace(0, 10, 21);
@@ -127,8 +129,8 @@ ylabel('q', 'FontSize', 16);
 % title('Log-scale Error Surface');
 legend('show', 'Location', 'NorthEast', 'FontSize', 14);
 colormap('parula');
-% clim([-5,3])
-% clim([-4,3])
+% clim([-7,3])
+clim([2,8])
 % Make tick labels bigger
 set(gca, 'FontSize', 18);
 saveas(gcf, fullfile(results_dir, 'surface_comparison.png'));

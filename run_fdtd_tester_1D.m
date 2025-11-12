@@ -9,8 +9,8 @@ N = 2; a = 0.3; M = 0.1; Lx = N*a + M;
 T = 1.4; c = 1.0;
 
 % target steps
-dh_t = 1e-3;
-dt_t = 1e-3;
+dh_t = 1e-2;
+dt_t = 1e-2;
 
 % snap to grid-exact values to satisfy util asserts
 Nx = max(3, round(Lx/dh_t) + 1);
