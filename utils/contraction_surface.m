@@ -15,15 +15,6 @@ function [Z_p2, Z_inf] = contraction_surface(N, a, M, Ly, y_mode, T, c, dh, dt, 
 
     % T = 0;
     
-    % omega_min = 2*pi / T; % two antinodes
-    omega_min = pi / T; % one antinode
-    omega_max = pi / dt; % nyquist frequency
-    % omega_max = pi / dt / 2; % half of the nyquist frequency
-    
-    % Frequency grid
-    omegas = linspace(omega_min, omega_max, J);
-    s_vals = 1i * omegas;
-
     % Compute surfaces for both p=2 and p=inf
     Z_p2 = zeros(size(THETA1));
     Z_inf = zeros(size(THETA1));
