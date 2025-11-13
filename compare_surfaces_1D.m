@@ -16,31 +16,20 @@ dt = 0.01;
 % dh = 0.001;
 % dt = 0.001;
 
-% % Viscous damping case
-% % gamma = 0.1;
-% % gamma = 0.3;
-% % gamma = 1;
+% Viscous damping case
+gamma = 1;
 % gamma = 5;
-% % gamma = 10;
-% % gamma = 100;
-% % gamma = 1000;
-% nu = 0;
-% % k = 10;
-% k = 5*N;
-% % k = 40;
-
-% Viscoelastic damping case
-gamma = 0;
-% nu = 0.01;
-nu = 0.1;
-% nu = 0.5;
-% nu = 1;
-% nu = 2;
-% nu = 5;
-% nu = 10;
-% nu = 100;
+nu = 0;
 % k = 10;
 k = 5*N;
+% k = 40;
+
+% % Viscoelastic damping case
+% gamma = 0;
+% % nu = 0.1;
+% nu = 0.5;
+% % k = 10;
+% k = 5*N;
 
 % Parameter ranges
 theta1_range = linspace(0, 1.2, 25);
@@ -80,30 +69,36 @@ fprintf('Computing contraction factor surfaces...\n');
 Ly = 0; y_mode = 0; % 1D
 [Z_p2, Z_inf] = contraction_surface(N, a, M, Ly, y_mode, T, c, dh, dt, gamma, nu, J, THETA1, THETA2);
 
-%% Extract optimal parameters for the single experiment
+%% Extract optimal parameters for the single experiment (SWR)
 [min_val, idx_min] = min(error_surface, [], 'all', 'linear');
 [min_i, min_j] = ind2sub(size(error_surface), idx_min);
 min_theta1_swr = THETA1(min_i, min_j);
 min_theta2_swr = THETA2(min_i, min_j);
 
-%% Find optimal points for theoretical surfaces
-% p=2 contraction factor
-[~, idx_min_p2] = min(Z_p2(:));
-[min_i_p2, min_j_p2] = ind2sub(size(Z_p2), idx_min_p2);
-min_theta1_p2 = THETA1(min_i_p2, min_j_p2);
-min_theta2_p2 = THETA2(min_i_p2, min_j_p2);
-min_val_p2 = Z_p2(min_i_p2, min_j_p2);
+%% Find optimal points for theoretical surfaces via fminsearch (ky = 0)
+ky = 0;
 
-% p=∞ contraction factor
-[~, idx_min_inf] = min(Z_inf(:));
-[min_i_inf, min_j_inf] = ind2sub(size(Z_inf), idx_min_inf);
-min_theta1_inf = THETA1(min_i_inf, min_j_inf);
-min_theta2_inf = THETA2(min_i_inf, min_j_inf);
-min_val_inf = Z_inf(min_i_inf, min_j_inf);
-
-% Initial guess point
+% Initial guess point (also used in plots)
 theta1_initial = 1/c;
 theta2_initial = 0;
+x0 = [theta1_initial, theta2_initial];
+
+% fminsearch options
+base_options = optimset('Display','off', ...
+                        'TolX',1e-4, ...
+                        'TolFun',1e-8);
+
+% p=2 contraction factor minimization
+objfun_p2 = @(x) obj_L2( N, T, dt, J, c, gamma, nu, a, M, x(1), x(2), ky );
+[x_opt_p2, min_val_p2] = fminsearch(objfun_p2, x0, base_options);
+min_theta1_p2 = x_opt_p2(1);
+min_theta2_p2 = x_opt_p2(2);
+
+% p=∞ contraction factor minimization
+objfun_inf = @(x) obj_Linf( N, T, dt, J, c, gamma, nu, a, M, x(1), x(2), ky );
+[x_opt_inf, min_val_inf] = fminsearch(objfun_inf, x0, base_options);
+min_theta1_inf = x_opt_inf(1);
+min_theta2_inf = x_opt_inf(2);
 
 %% Create results directory and save figures
 results_dir = 'analysis_results';
@@ -120,8 +115,8 @@ imagesc(theta1_range_plot, theta2_range_plot, log10(error_surface));
 axis xy;
 hold on;
 plot(theta1_initial, theta2_initial, 'ks', 'MarkerSize', 10, 'MarkerFaceColor', 'k', 'DisplayName', 'Initial guess');
-plot(min_theta1_swr, min_theta2_swr, 'rs', 'MarkerSize', 10, 'MarkerFaceColor', 'r', 'LineWidth', 2, 'DisplayName', 'SWR error opt.');
-plot(min_theta1_p2, min_theta2_p2, 'm*', 'MarkerSize', 10, 'MarkerFaceColor', 'm', 'DisplayName', 'Spectral opt. L2');
+plot(min_theta1_swr, min_theta2_swr, 'rs', 'MarkerSize', 10, 'MarkerFaceColor', 'r', 'DisplayName', 'SWR error opt.');
+plot(min_theta1_p2,  min_theta2_p2,  'm*', 'MarkerSize', 10, 'MarkerFaceColor', 'm', 'DisplayName', 'Spectral opt. L2');
 plot(min_theta1_inf, min_theta2_inf, 'g^', 'MarkerSize', 10, 'MarkerFaceColor', 'g', 'DisplayName', 'Spectral opt. L∞');
 colorbar;
 xlabel('p', 'FontSize', 16);
@@ -129,8 +124,11 @@ ylabel('q', 'FontSize', 16);
 % title('Log-scale Error Surface');
 legend('show', 'Location', 'NorthEast', 'FontSize', 14);
 colormap('parula');
-% clim([-7,3])
-clim([2,8])
+if gamma == 0
+    clim([-7,3])
+elseif nu == 0
+    clim([2,8])
+end
 % Make tick labels bigger
 set(gca, 'FontSize', 18);
 saveas(gcf, fullfile(results_dir, 'surface_comparison.png'));
@@ -141,8 +139,8 @@ imagesc(theta1_range_plot, theta2_range_plot, Z_p2);
 axis xy;
 hold on;
 plot(theta1_initial, theta2_initial, 'ks', 'MarkerSize', 10, 'MarkerFaceColor', 'k', 'DisplayName', 'Initial guess');
-plot(min_theta1_swr, min_theta2_swr, 'rs', 'MarkerSize', 10, 'MarkerFaceColor', 'r', 'LineWidth', 2, 'DisplayName', 'SWR error opt.');
-plot(min_theta1_p2, min_theta2_p2, 'm*', 'MarkerSize', 10, 'MarkerFaceColor', 'm', 'DisplayName', 'Spectral opt. L2');
+plot(min_theta1_swr, min_theta2_swr, 'rs', 'MarkerSize', 10, 'MarkerFaceColor', 'r', 'DisplayName', 'SWR error opt.');
+plot(min_theta1_p2,  min_theta2_p2,  'm*', 'MarkerSize', 10, 'MarkerFaceColor', 'm', 'DisplayName', 'Spectral opt. L2');
 plot(min_theta1_inf, min_theta2_inf, 'g^', 'MarkerSize', 10, 'MarkerFaceColor', 'g', 'DisplayName', 'Spectral opt. L∞');
 colorbar;
 xlabel('p', 'FontSize', 16);
@@ -160,8 +158,8 @@ imagesc(theta1_range_plot, theta2_range_plot, Z_inf);
 axis xy;
 hold on;
 plot(theta1_initial, theta2_initial, 'ks', 'MarkerSize', 10, 'MarkerFaceColor', 'k', 'DisplayName', 'Initial guess');
-plot(min_theta1_swr, min_theta2_swr, 'rs', 'MarkerSize', 10, 'MarkerFaceColor', 'r', 'LineWidth', 2, 'DisplayName', 'SWR error opt.');
-plot(min_theta1_p2, min_theta2_p2, 'm*', 'MarkerSize', 10, 'MarkerFaceColor', 'm', 'DisplayName', 'Spectral opt. L2');
+plot(min_theta1_swr, min_theta2_swr, 'rs', 'MarkerSize', 10, 'MarkerFaceColor', 'r', 'DisplayName', 'SWR error opt.');
+plot(min_theta1_p2,  min_theta2_p2,  'm*', 'MarkerSize', 10, 'MarkerFaceColor', 'm', 'DisplayName', 'Spectral opt. L2');
 plot(min_theta1_inf, min_theta2_inf, 'g^', 'MarkerSize', 10, 'MarkerFaceColor', 'g', 'DisplayName', 'Spectral opt. L∞');
 colorbar;
 xlabel('p', 'FontSize', 16);
@@ -180,5 +178,5 @@ fprintf('\nComparison of Methods:\n');
 fprintf('Method         theta1    theta2\n');
 fprintf('----------------------------------------------------------\n');
 fprintf('SWR error opt. %8.4f     %8.4f\n', min_theta1_swr, min_theta2_swr);
-fprintf('L2             %8.4f     %8.4f\n', min_theta1_p2, min_theta2_p2);
+fprintf('L2             %8.4f     %8.4f\n', min_theta1_p2,  min_theta2_p2);
 fprintf('Linf           %8.4f     %8.4f\n', min_theta1_inf, min_theta2_inf);
