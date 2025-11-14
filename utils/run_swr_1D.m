@@ -181,7 +181,8 @@ function [ud, final_res, res_history] = run_swr_1D(u0, v0, N, a_val, M, T, c, dh
             % title(title_str)
 
             % Compute and store residual after each complete iteration
-            res = max(abs(ud - u_ref), [], 'all') / max(abs(u_ref), [], 'all');
+            % res = max(abs(ud - u_ref), [], 'all') / max(abs(u_ref), [], 'all');
+            res = max(abs(ud(:,end) - u_ref(:,end))) / max(abs(u_ref(:,end)));
             % res = max(abs(ud(:,2:end-1) - u_ref(:,2:end-1)), [], 'all') / max(abs(u_ref(:,2:end-1)), [], 'all');
             res_history(iter_k) = res;
         end
