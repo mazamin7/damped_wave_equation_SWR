@@ -7,12 +7,14 @@ a  = 0.3;
 M  = 0.1;
 Lx = N*a + M;
 
-c  = 1;  
+c  = 1;
 % dh = 0.01;  
 % dt = 0.01;
+% dh = 0.005;  
+% dt = 0.005;
 dh = 0.002;
 dt = 0.002;
-T  = 5;  
+T  = 5;
 J  = 50;
 
 Nx = round(Lx/dh) + 1;
@@ -23,7 +25,6 @@ t_grid = linspace(0,T,Nt);
 % --- Modal initial condition
 m_mode  = 1;
 k0      = m_mode*pi/Lx;
-omega0  = c*k0;
 A0      = 1.0;      % Initial displacement amplitude
 v0amp   = 0.0;      % Initial velocity amplitude
 
@@ -75,7 +76,7 @@ for s = 1:nCases
 
     % Ground-truth analytical solution
     u_gt = analytic_solution_single_mode(x_grid, t_grid, c, gamma, nu, ...
-                                         k0, omega0, A0, v0amp);
+                                         k0, A0, v0amp);
 
     % FDTD reference solution (as in original code)
     u_ref = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
@@ -83,8 +84,8 @@ for s = 1:nCases
     % Final-time relative error between FDTD and GT (L-infinity in space)
     ref_gt_errors(s) = max(abs(u_ref(:,end) - u_gt(:,end))) / max(abs(u_gt(:,end)));
 
-    % Objective (assumed to use gamma, nu, etc., as in your current obj_Linf)
-    objfun = @(x) obj_Linf(N,T,dt,J,c,gamma,nu,a,M,x(1),x(2),ky);
+    % Objective (assumed to use gamma, nu, etc., as in your current obj_L2)
+    objfun = @(x) obj_L2(N,T,dt,J,c,gamma,nu,a,M,x(1),x(2),ky);
 
     % Save trajectory
     outfun = @(x,optimvalues,state) store_trajectory(x,optimvalues,state,s);
@@ -112,7 +113,7 @@ for s = 1:nCases
         u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_opt, q_opt, ...
         k, u_init, u_gt);
 
-    % Error at iteration 0: initial guess u_init vs GT (relative Linf in space-time)
+    % Error at iteration 0: initial guess u_init vs GT (relative L2 in space-time)
     err0 = max(abs(u_init(:) - u_gt(:))) / max(abs(u_gt(:)));
 
     % Prepend iteration-0 error to history
@@ -212,7 +213,7 @@ for s = 1:nCases
     gamma = cases(s).gamma;
     nu    = cases(s).nu;
 
-    objfun_pq = @(p,q) obj_Linf(N,T,dt,J,c,gamma,nu,a,M,p,q,ky);
+    objfun_pq = @(p,q) obj_L2(N,T,dt,J,c,gamma,nu,a,M,p,q,ky);
 
     pmin = min(pq(:,1)); pmax = max(pq(:,1));
     qmin = min(pq(:,2)); qmax = max(pq(:,2));
@@ -262,28 +263,4 @@ function stop = store_trajectory(x,optimvalues,state,idx)
     elseif strcmp(state,'iter')
         PQ_history{idx}(end+1,:) = x(:).';
     end
-end
-
-% ============================================================
-% Analytical GT for 1 mode
-% ============================================================
-function u_an = analytic_solution_single_mode(x, t, c, gamma, nu, k0, omega0, A0, v0amp)
-    ge   = 0.5*(gamma + nu*k0^2);
-    disc = ge^2 - omega0^2;
-
-    if disc < -1e-14
-        omegad = sqrt(omega0^2 - ge^2);
-        Ct = cos(omegad*t); St = sin(omegad*t);
-        q  = exp(-ge*t) .* ( A0*Ct + ((v0amp + ge*A0)/omegad) * St );
-    elseif abs(disc) <= 1e-14
-        q  = exp(-ge*t) .* ( A0 + (v0amp + ge*A0)*t );
-    else
-        s  = sqrt(disc);
-        r1 = -ge + s;  r2 = -ge - s;
-        C1 = (v0amp - r2*A0)/(r1 - r2);
-        C2 = (r1*A0 - v0amp)/(r1 - r2);
-        q  = C1*exp(r1*t) + C2*exp(r2*t);
-    end
-
-    u_an = sin(k0*x(:)) * q;
 end
