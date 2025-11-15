@@ -5,8 +5,6 @@ addpath("utils\")
 % Physical parameters
 c = 1;  L = 1.0;  T = 1.0;
 
-k = 1;  A0 = 1.0;  V0 = 0.0;
-
 % Old damping -> new PDE: u_tt + gamma u_t = c^2 u_xx + nu u_txx
 alpha1 = 0.05 * c;
 alpha2 = 0.05 * c;
@@ -14,9 +12,9 @@ gamma  = 2*alpha1;
 nu     = 2*alpha2*c^2;
 
 % target dx list
-dx_target = [0.1, 0.1/2, 0.1/4, 0.1/8, 0.1/16, 0.1/32, 0.1/64];
+dx_array = [0.1, 0.1/2, 0.1/4, 0.1/8, 0.1/16, 0.1/32, 0.1/64];
 
-num_cases = numel(dx_target);
+num_cases = numel(dx_array);
 L2_err  = zeros(num_cases,1);
 Linf_err = zeros(num_cases,1);
 dx_used = zeros(num_cases,1);
@@ -24,21 +22,22 @@ dt_used = zeros(num_cases,1);
 
 fprintf('PDE: u_tt + gamma u_t = c^2 u_xx + nu u_txx,  gamma=%.4g, nu=%.4g\n', gamma, nu);
 
-u0_fun = @(x) A0 * sin(k*pi*x/L);
-v0_fun = @(x) V0 * sin(k*pi*x/L);
+A0 = 1.0;  v0amp = 0.0;
+k0_mode = 1;              % integer mode number
+k0      = k0_mode*pi/L;   % physical wavenumber
+u0_fun  = @(x) A0 * sin(k0*x);
+v0_fun  = @(x) v0amp * sin(k0*x);
 
 for ic = 1:num_cases
     % --- snap steps so util asserts pass ---
-    dx_t   = dx_target(ic);
-    Nx     = max(3, round(L/dx_t) + 1);
-    dx     = L/(Nx-1);
-    dt_t   = dx/c;                      % target CFL=1
-    Nt     = max(3, round(T/dt_t) + 1);
-    dt     = T/(Nt-1);
+    dx     = dx_array(ic);
+    Nx     = round(L/dx) + 1;
+    dt     = dx/c;                      % target CFL=1
+    Nt     = round(T/dt) + 1;
     CFL    = c*dt/dx;
 
     fprintf('Case %d: dx_t=%.3e -> dx=%.3e, dt=%.3e, CFL=%.3g, Nx=%d, Nt=%d\n', ...
-            ic, dx_t, dx, dt, CFL, Nx, Nt);
+            ic, dx, dx, dt, CFL, Nx, Nt);
 
     % --- numerical solution on snapped grid ---
     u_fdtd = run_fdtd_1D(u0_fun, v0_fun, L, T, c, dx, dt, gamma, nu);
@@ -46,33 +45,14 @@ for ic = 1:num_cases
     x = linspace(0,L,size(u_fdtd,1)).';
     t = linspace(0,T,size(u_fdtd,2));
 
-    % --- analytical single-mode (no forcing) consistent with PDE ---
-    lambda_k = (k*pi/L)^2;
-    omega0   = c*sqrt(lambda_k);
-    ge       = 0.5*(gamma + nu*lambda_k);
-    disc     = ge^2 - omega0^2;
-
-    if disc < -1e-14
-        omegad = sqrt(omega0^2 - ge^2);
-        q = exp(-ge*t) .* ( A0*cos(omegad*t) + ((V0 + ge*A0)/omegad)*sin(omegad*t) );
-    elseif abs(disc) <= 1e-14
-        q = exp(-ge*t) .* ( A0 + (V0 + ge*A0)*t );
-    else
-        s  = sqrt(disc);
-        r1 = -ge + s;  r2 = -ge - s;
-        C1 = (V0 - r2*A0)/(r1 - r2);
-        C2 = (r1*A0 - V0)/(r1 - r2);
-        q  = C1*exp(r1*t) + C2*exp(r2*t);
-    end
-    u_an = sin(k*pi*x/L) * q;
+    u_an = analytic_solution_single_mode(x, t, c, gamma, nu, k0, A0, v0amp);
 
     % --- final-time errors on snapped grid ---
     diff = u_fdtd(:,end) - u_an(:,end);
-    dx_eff = L/(numel(x)-1);
-    L2_err(ic)   = sqrt(dx_eff * sum( diff.^2 ));
+    L2_err(ic)   = sqrt(dx * sum( diff.^2 ));
     Linf_err(ic) = max(abs(diff));
 
-    dx_used(ic) = dx_eff;
+    dx_used(ic) = dx;
     dt_used(ic) = dt;
 end
 
@@ -104,22 +84,3 @@ loglog(dx_used, ref_h2, ':', 'LineWidth',1.5, 'DisplayName','h^2 ref');
 set(gca,'XDir','reverse'); grid on; legend('Location','southwest');
 xlabel('h = \Delta x'); ylabel('Error at T');
 title(sprintf('Convergence: rate L2=%.2f, rate L_\\infty=%.2f', rate_L2, rate_Linf));
-
-% sanity check vs old formula
-A_old = modalA_old(t, A0, V0, alpha1, alpha2, c, k, L);
-fprintf('Max |A_old - A_new|: %.3e\n', max(abs(A_old - q)));
-
-function At = modalA_old(t, A0, V0, alpha1, alpha2, c, k, L)
-    lambda_k = (k*pi/L)^2;  beta = alpha1 + alpha2*c^2*lambda_k;  omega2 = c^2*lambda_k;
-    t = t(:)'; 
-    if beta^2 < omega2
-        od = sqrt(omega2 - beta^2);
-        At = exp(-beta*t).*( A0*cos(od*t) + ((V0 + beta*A0)/od).*sin(od*t) );
-    elseif abs(beta^2-omega2) < 1e-12
-        At = exp(-beta*t).*( A0 + (V0 + beta*A0).*t );
-    else
-        s = sqrt(beta^2 - omega2); r1=-beta+s; r2=-beta-s;
-        C1=(V0 - r2*A0)/(r1-r2); C2=A0-C1;
-        At = C1*exp(r1*t) + C2*exp(r2*t);
-    end
-end
