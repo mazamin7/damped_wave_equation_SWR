@@ -157,6 +157,8 @@ xlabel('Iteration','FontSize',16);
 ylabel('Error','FontSize',16);
 grid on; set(gca,'FontSize',18);
 
+ylim([1e-10, 1e10])
+
 % Automatic labels: only gamma (nu=0)
 gamma_labels = arrayfun(@(c) sprintf('\\gamma=%.3g', c.gamma), cases(gamma_idx), ...
                         'UniformOutput', false);

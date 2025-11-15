@@ -268,5 +268,5 @@ colorbar;
 set(gca, 'XScale', 'log', 'YScale', 'log');   % Log scale for both axes
 xlabel('\gamma', 'FontSize', 16);
 ylabel('\nu',    'FontSize', 16);
-title('Global contraction factor \rho(\gamma,\nu)', 'FontSize', 16);
+% title('Global contraction factor \rho(\gamma,\nu)', 'FontSize', 16);
 set(gca, 'FontSize', 16);
