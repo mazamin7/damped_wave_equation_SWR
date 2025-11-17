@@ -5,7 +5,7 @@ fprintf('Scanning gamma values for final relative Linf error.\n');
 
 %% Domain and numerics
 N = 2; a = 0.3; M = 0.1; Lx = N*a + M;
-T = 1.4; c = 1.0;
+T = 1; c = 1.0;
 
 dh = 0.002;
 dt = 0.002;

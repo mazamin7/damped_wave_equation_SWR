@@ -6,7 +6,7 @@ fprintf('FDTD vs analytical, single mode, Dirichlet BCs.\n');
 
 %% Domain and numerics
 N = 2; a = 0.3; M = 0.1; Lx = N*a + M;
-T = 1.4; c = 1.0;
+T = 1; c = 1.0;
 
 % target steps
 dh = 0.002;

@@ -4,12 +4,8 @@ addpath("utils\")
 
 % Physical parameters
 c = 1;  L = 1.0;  T = 1.0;
-
-% Old damping -> new PDE: u_tt + gamma u_t = c^2 u_xx + nu u_txx
-alpha1 = 0.05 * c;
-alpha2 = 0.05 * c;
-gamma  = 2*alpha1;
-nu     = 2*alpha2*c^2;
+gamma  = 0.01;
+nu     = 0.01;
 
 % target dx list
 dx_array = [0.1, 0.1/2, 0.1/4, 0.1/8, 0.1/16, 0.1/32, 0.1/64];
