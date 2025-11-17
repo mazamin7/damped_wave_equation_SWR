@@ -109,7 +109,7 @@ theta1_range_plot = THETA1(1, :);
 theta2_range_plot = THETA2(:, 1)';
 
 figure()
-contourf(theta1_range_plot, theta2_range_plot, log10(error_surface), 20, 'LineStyle', 'none', 'HandleVisibility', 'off');
+contourf(theta1_range_plot, theta2_range_plot, log10(error_surface), 50, 'LineStyle', 'none', 'HandleVisibility', 'off');
 axis xy;
 hold on;
 plot(theta1_initial, theta2_initial, 'ks', 'MarkerSize', 10, 'MarkerFaceColor', 'k', 'DisplayName', 'Initial guess');
@@ -120,12 +120,12 @@ colorbar;
 xlabel('p', 'FontSize', 16);
 ylabel('q', 'FontSize', 16);
 % title('Log-scale Error Surface');
-legend('show', 'Location', 'NorthEast', 'FontSize', 14);
+legend('show', 'Location', 'SouthWest', 'FontSize', 14);
 colormap('parula');
 if gamma == 0
-    clim([-7,3])
+    clim([min(log10(error_surface),[],'all'),3])
 elseif nu == 0
-    clim([2,8])
+    clim([min(log10(error_surface),[],'all'),8])
 end
 % Make tick labels bigger
 set(gca, 'FontSize', 18);
