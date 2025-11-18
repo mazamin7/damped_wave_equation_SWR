@@ -18,24 +18,25 @@ dt = 0.002;
 % dh = 0.001;
 % dt = 0.001;
 
-% Viscous damping case
-% gamma = 4;
-gamma = 8;
-% gamma = 10;
+% % Viscous damping case
+% % gamma = 4;
+% % gamma = 8;
+% % gamma = 10;
 % gamma = 12;
-nu = 0;
-% k = 10;
-k = 5*N;
-% k = 40;
-
-% % Viscoelastic damping case
-% gamma = 0;
-% % nu = 0.005;
-% % nu = 0.01;
-% % nu = 0.1;
-% nu = 0.5;
+% nu = 0;
 % % k = 10;
 % k = 5*N;
+% % k = 40;
+
+% Viscoelastic damping case
+gamma = 0;
+% nu = 0.001;
+% nu = 0.01;
+nu = 0.05;
+% nu = 0.1;
+% k = 10;
+k = 5*N;
+% k = 20;
 
 % Parameter ranges
 % theta1_range = linspace(0, 1.2, 25);
@@ -56,8 +57,7 @@ theta2_max = max(theta2_range);
 
 clip = @(v, vmin, vmax) max(vmin, min(vmax, v));
 
-% J = 500; % frequency axis steps
-J = 50;
+J = 1000; % frequency axis steps
 
 %% Run single experiment
 
@@ -123,7 +123,10 @@ colorbar;
 xlabel('p', 'FontSize', 16);
 ylabel('q', 'FontSize', 16);
 % title('Log-scale Error Surface');
-legend('show', 'Location', 'SouthWest', 'FontSize', 14);
+% legend('show', 'Location', 'SouthWest', 'FontSize', 14);
+% legend('show', 'Location', 'NorthEast', 'FontSize', 14);
+legend('show', 'Location', 'NorthWest', 'FontSize', 14);
+% legend('show', 'Location', 'best', 'FontSize', 14);
 colormap('parula');
 if gamma == 0
     clim([min(log10(error_surface),[],'all'),3])

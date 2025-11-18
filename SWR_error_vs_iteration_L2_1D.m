@@ -15,7 +15,7 @@ c  = 1;
 dh = 0.002;
 dt = 0.002;
 T  = 5;
-J  = 50;
+J  = 1000;
 
 Nx = round(Lx/dh) + 1;
 Nt = round(T/dt) + 1;
@@ -37,10 +37,10 @@ cases = [
     struct('gamma',8   ,'nu',0)
     struct('gamma',10  ,'nu',0)
     struct('gamma',12  ,'nu',0)
-    struct('gamma',0   ,'nu',0.005)
+    struct('gamma',0   ,'nu',0.001)
     struct('gamma',0   ,'nu',0.01)
+    struct('gamma',0   ,'nu',0.05)
     struct('gamma',0   ,'nu',0.1)
-    struct('gamma',0   ,'nu',0.5)
 ];
 
 nCases = numel(cases);

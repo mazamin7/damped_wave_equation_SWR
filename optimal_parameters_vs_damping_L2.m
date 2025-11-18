@@ -12,9 +12,9 @@ T = 5;
 ky = 0;         % 1D case
 
 % Discretization parameters
-dh = 0.01;
-dt = 0.01;
-J  = 50;        % Number of frequency steps
+dh = 0.002;
+dt = 0.002;
+J  = 1000;        % Number of frequency steps
 
 % Optimization parameters
 tol = 1e-9;
