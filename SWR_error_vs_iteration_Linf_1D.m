@@ -108,13 +108,13 @@ for s = 1:nCases
         k = 20;
     end
 
-    % SWR using optimized parameters (error vs GT inside run_swr_1D)
+    % SWR using optimized parameters (error vs fdtd inside run_swr_1D)
     [~, final_res, res_history] = run_swr_1D( ...
         u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_opt, q_opt, ...
-        k, u_init, u_gt);
+        k, u_init, u_ref);
 
-    % Error at iteration 0: initial guess u_init vs GT (relative Linf in space-time)
-    err0 = max(abs(u_init(:) - u_gt(:))) / max(abs(u_gt(:)));
+    % Error at iteration 0: initial guess u_init vs fdtd (relative Linf in space-time)
+    err0 = max(abs(u_init(:) - u_ref(:))) / max(abs(u_ref(:)));
 
     % Prepend iteration-0 error to history
     res_hist{s}     = [err0; res_history(:)];
@@ -157,7 +157,7 @@ xlabel('Iteration','FontSize',16);
 ylabel('Error','FontSize',16);
 grid on; set(gca,'FontSize',18);
 
-ylim([1e-10, 1e10])
+% ylim([1e-10, 1e10])
 
 % Automatic labels: only gamma (nu=0)
 gamma_labels = arrayfun(@(c) sprintf('\\gamma=%.3g', c.gamma), cases(gamma_idx), ...
