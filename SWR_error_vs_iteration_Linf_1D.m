@@ -1,22 +1,25 @@
 clear all; close all; clc;
 addpath("utils\")
 
-% --- Geometry / discretization
-N  = 2;
-a  = 0.3;
-M  = 0.1;
-Lx = N*a + M;
+% Simulation parameters
+P = get_sim_params_1D();
 
-c  = 1;
-% dh = 0.01;  
-% dt = 0.01;
-% dh = 0.005;  
-% dt = 0.005;
-dh = 0.002;
-dt = 0.002;
-T  = 5;
-J  = 1000;
+N  = P.N;
+a  = P.a;
+M  = P.M;
+b  = P.b;
+Lx = P.Lx;
+T  = P.T;
 
+c  = P.c;
+gamma = P.gamma; % ignore
+nu = P.nu; % ignore
+
+dh = P.dh;
+dt = P.dt;
+J  = P.J;
+
+%%
 Nx = round(Lx/dh) + 1;
 Nt = round(T/dt) + 1;
 x_grid = linspace(0,Lx,Nx);

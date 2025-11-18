@@ -4,14 +4,22 @@ addpath("utils\")
 fprintf('Scanning gamma values for final relative Linf error.\n');
 
 %% Domain and numerics
-N = 2; a = 0.3; M = 0.1; Lx = N*a + M;
-T = 1; c = 1.0;
+P = get_sim_params_1D();
 
-dh = 0.002;
-dt = 0.002;
+N  = P.N;
+a  = P.a;
+M  = P.M;
+b  = P.b;
+Lx = P.Lx;
+T  = P.T;
 
-%% Physics (nu = 0 fixed)
-nu = 0;
+c  = P.c;
+gamma = P.gamma; % ignore
+nu = P.nu;
+
+dh = P.dh;
+dt = P.dt;
+J  = P.J;
 
 %% Single eigenmode parameters
 n0    = 1;

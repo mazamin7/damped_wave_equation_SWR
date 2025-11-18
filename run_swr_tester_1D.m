@@ -6,25 +6,27 @@ addpath("utils\")
 fprintf('Comparing FDTD, SWR Dirichlet, and SWR Robin in 1D...\n');
 
 % Parameters
-N = 2;
-a = 0.3;
-M = 0.1;
-Lx = N*a + M;
+P = get_sim_params_1D();
 
-T  = 2;
-c  = 1.0;
-dh = 0.01;
-dt = 0.01;
+N  = P.N;
+a  = P.a;
+M  = P.M;
+b  = P.b;
+Lx = P.Lx;
+T  = P.T;
 
-% --- snap dh,dt to the grid used everywhere ---
+c  = P.c;
+gamma = P.gamma;
+nu = P.nu;
+
+dh = P.dh;
+dt = P.dt;
+J  = P.J;
+
+%% --- snap dh,dt to the grid used everywhere ---
 Nx = round(Lx/dh) + 1;
 Nt = round(T/dt) + 1;
-dh = Lx/(Nx-1);          % snapped Δx
-dt = T /(Nt-1);          % snapped Δt
 
-% viscous
-gamma  = 10;
-nu     = 0;
 theta1 = 1/c;
 theta2 = 0;
 k      = 50*N;

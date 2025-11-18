@@ -5,18 +5,26 @@ addpath("utils\")
 fprintf('FDTD vs analytical, single mode, Dirichlet BCs.\n');
 
 %% Domain and numerics
-N = 2; a = 0.3; M = 0.1; Lx = N*a + M;
-T = 1; c = 1.0;
+P = get_sim_params_1D();
 
-% target steps
-dh = 0.002;
-dt = 0.002;
+N  = P.N; % ignore
+a  = P.a; % ignore
+M  = P.M; % ignore
+b  = P.b; % ignore
+Lx = P.Lx; % ignore
+Lx = 1;
+T  = P.T;
 
+c  = P.c;
+gamma = P.gamma;
+nu = P.nu;
+
+dh = P.dh;
+dt = P.dt;
+J  = P.J; % ignore
+
+%%
 CFL = c*dt/dh;
-
-%% Physics (PDE: u_tt + gamma u_t = c^2 u_xx + nu u_txx)
-gamma = 10;
-nu    = 0;
 
 %% Single eigenmode
 n0    = 1;

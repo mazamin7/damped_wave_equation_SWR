@@ -3,19 +3,25 @@ clear; close all; clc;
 
 addpath('utils\')
 
-% ----- fixed per-subdomain problem size (weak scaling) -----
-a_val = 0.3;          % subdomain length
-M     = 0.1;          % overlap
-% Ly    = 0.1;          % domain height
-c     = 1.0;
-dh    = 0.01;
-dt    = 0.7*dh/c;   % stable for 2D wave part
-T     = 5;
+% Simulation parameters
+P = get_sim_params_1D();
 
-% damping model
-% gamma = 1;  nu = 0;    % viscous
-gamma = 0;  nu = 1;  % viscoelastic
+N  = P.N; % ignore
+a  = P.a;
+M  = P.M;
+b  = P.b;
+Lx = P.Lx; % ignore
+T  = P.T;
 
+c  = P.c;
+gamma = P.gamma;
+nu = P.nu;
+
+dh = P.dh;
+dt = P.dt;
+J  = P.J;
+
+%%
 % SWR iterations per subdomain
 % k_per_dom = 50;        % viscous
 k_per_dom = 50;      % viscoelastic
@@ -39,14 +45,14 @@ tol = 1e-6;
 options = optimset('Display','off','TolX',tol,'TolFun',tol);
 x0 = [1/c, 0];                 % warm start for (p,q)
 ky = 0;                        % optimize along normal incidence
-objfun = @(N,T,dt,J,c,gamma,nu,a_val,M,p,q,ky) ...
-           obj_Linf(N,T,dt,J,c,gamma,nu,a_val,M,p,q,ky);   % user-provided
+objfun = @(N,T,dt,J,c,gamma,nu,a,M,p,q,ky) ...
+           obj_Linf(N,T,dt,J,c,gamma,nu,a,M,p,q,ky);   % user-provided
 
 for ii = 1:numel(N_list)
     N = N_list(ii);
 
     % geometry
-    aj  = @(j) a_val*(j-1);
+    aj  = @(j) a*(j-1);
     bj  = @(j) aj(j+1) + M;
     Lx  = bj(N);
 
@@ -69,7 +75,7 @@ for ii = 1:numel(N_list)
     Nt = size(u_ref,3);     % J in your notation
     J  = Nt;
     fprintf('[N=%d] optimizing (p,q)...\n',N);
-    f = @(x) objfun(N,T,dt,J,c,gamma,nu,a_val,M,x(1),x(2),ky);
+    f = @(x) objfun(N,T,dt,J,c,gamma,nu,a,M,x(1),x(2),ky);
     [x_opt, ~] = fminsearch(f, x0, options);
     p = x_opt(1);  q = x_opt(2);
     % p = 1/c; q = 0;
@@ -82,7 +88,7 @@ for ii = 1:numel(N_list)
     % run SWR with optimized (p,q)
     fprintf('[N=%d] SWR Robin with p=%.3g, q=%.3g...\n',N,p,q);
     tic;
-    [~, final_res(ii), ~] = run_swr_1D(u0_fun, v0_fun, N, a_val, M, T, c, dh, dt, gamma, nu, p, q, k, u_init, u_ref);
+    [~, final_res(ii), ~] = run_swr_1D(u0_fun, v0_fun, N, a, M, T, c, dh, dt, gamma, nu, p, q, k, u_init, u_ref);
     time_robin(ii) = toc;
 
     % weak-scaling bookkeeping
@@ -110,6 +116,6 @@ xlabel('N'); ylabel('Time (s)'); title('SWR wall-clock vs N');
 fprintf('\nN   Lx      Nx(local) Nx(global)   p_opt        q_opt        final_res     time(s)\n');
 for ii = 1:numel(N_list)
     fprintf('%-3d %-7.3f %-9d %-11d %-12.4e %-12.4e %.3e   %.2f\n', ...
-        N_list(ii), a_val*N_list(ii)+M, Nx_local(ii), Nx_global(ii), ...
+        N_list(ii), a*N_list(ii)+M, Nx_local(ii), Nx_global(ii), ...
         p_opt(ii), q_opt(ii), final_res(ii), time_robin(ii));
 end

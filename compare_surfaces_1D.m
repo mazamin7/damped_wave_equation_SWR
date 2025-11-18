@@ -4,19 +4,24 @@ clear all; close all; clc;
 addpath("utils\")
 
 %% Parameters
-N = 2;
-% N = 8;
-a = 0.3;
-M = 0.1;
-% Lx = N*a + M; % automatically determined
-T = 5;
-c = 1.0;
-% dh = 0.01;
-% dt = 0.01;
-dh = 0.002;
-dt = 0.002;
-% dh = 0.001;
-% dt = 0.001;
+P = get_sim_params_1D();
+
+N  = P.N;
+a  = P.a;
+M  = P.M;
+b  = P.b;
+Lx = P.Lx;
+T  = P.T;
+
+c  = P.c;
+gamma = P.gamma; % ignore
+nu = P.nu; % ignore
+
+dh = P.dh;
+dt = P.dt;
+J  = P.J;
+
+%%
 
 % % Viscous damping case
 % % gamma = 4;
@@ -56,8 +61,6 @@ theta2_min = min(theta2_range);
 theta2_max = max(theta2_range);
 
 clip = @(v, vmin, vmax) max(vmin, min(vmax, v));
-
-J = 1000; % frequency axis steps
 
 %% Run single experiment
 

@@ -3,18 +3,25 @@ clear; close all; clc;
 addpath("utils\")
 
 %% Common parameters
-N = 2;          % Number of subdomains
-c = 1.0;
-M = 0.1;
-a = 0.3;
-b = a + M;
-T = 5;
-ky = 0;         % 1D case
+P = get_sim_params_1D();
 
-% Discretization parameters
-dh = 0.002;
-dt = 0.002;
-J  = 1000;        % Number of frequency steps
+N  = P.N;
+a  = P.a;
+M  = P.M;
+b  = P.b;
+Lx = P.Lx;
+T  = P.T;
+
+c  = P.c;
+gamma = P.gamma; % ignore
+nu = P.nu; % ignore
+
+dh = P.dh;
+dt = P.dt;
+J  = P.J;
+
+%%
+ky = 0;         % 1D case
 
 % Optimization parameters
 tol = 1e-9;
@@ -138,8 +145,10 @@ hold on; box on; grid on;
 % Draw boundary again for context
 plot(P_boundary, Q_boundary, 'k-', 'LineWidth', 2, 'HandleVisibility', 'off');%, 'DisplayName','Envelope boundary');
 
-colors = lines(numel(nu_idx));
-for k = 1:numel(nu_idx)
+% Use a continuous colormap instead of cycling colors
+num_curves = numel(nu_idx);
+colors = parula(num_curves);
+for k = 1:num_curves
     j = nu_idx(k);
     p_curve = p_opt(:,j);
     q_curve = q_opt(:,j);
@@ -176,8 +185,10 @@ hold on; box on; grid on;
 % Draw boundary again for context
 plot(P_boundary, Q_boundary, 'k-', 'LineWidth', 2, 'HandleVisibility', 'off');%, 'DisplayName','Envelope boundary');
 
-colors = lines(numel(gamma_idx));
-for k = 1:numel(gamma_idx)
+% Use a continuous colormap instead of cycling colors
+num_curves = numel(gamma_idx);
+colors = parula(num_curves);
+for k = 1:num_curves
     i = gamma_idx(k);
     p_curve = p_opt(i,:);
     q_curve = q_opt(i,:);

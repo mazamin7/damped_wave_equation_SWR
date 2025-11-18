@@ -4,14 +4,23 @@ addpath("utils\")
 fprintf('Scanning nu values for final relative Linf error (gamma = 0).\n');
 
 %% Domain and numerics
-N = 2; a = 0.3; M = 0.1; Lx = N*a + M;
-T = 1; c = 1.0;
+P = get_sim_params_1D();
 
-dh = 0.002;
-dt = 0.002;
+N  = P.N; % ignore
+a  = P.a; % ignore
+M  = P.M; % ignore
+b  = P.b; % ignore
+Lx = P.Lx; % ignore
+Lx = 1;
+T  = P.T;
 
-%% Physics (gamma = 0 fixed)
-gamma = 0;
+c  = P.c;
+gamma = P.gamma;
+nu = P.nu; % ignore
+
+dh = P.dh;
+dt = P.dt;
+J  = P.J; % ignore
 
 %% Single eigenmode parameters
 n0    = 1;

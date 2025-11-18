@@ -2,12 +2,26 @@
 clearvars; close all; clc;
 addpath("utils\")
 
-% Physical parameters
-c = 1;  L = 1.0;  T = 1.0;
-gamma  = 0.01;
-nu     = 0.01;
+% Simulation parameters
+P = get_sim_params_1D();
 
-% target dx list
+N  = P.N; % ignore
+a  = P.a; % ignore
+M  = P.M; % ignore
+b  = P.b; % ignore
+Lx = P.Lx; % ignore
+Lx = 1.0;
+T  = P.T;
+
+c  = P.c;
+gamma = P.gamma;
+nu = P.nu;
+
+dh = P.dh;
+dt = P.dt;
+J  = P.J; % ignore
+
+%% target dx list
 dx_array = [0.1, 0.1/2, 0.1/4, 0.1/8, 0.1/16, 0.1/32, 0.1/64];
 
 num_cases = numel(dx_array);
@@ -20,14 +34,14 @@ fprintf('PDE: u_tt + gamma u_t = c^2 u_xx + nu u_txx,  gamma=%.4g, nu=%.4g\n', g
 
 A0 = 1.0;  v0amp = 0.0;
 k0_mode = 1;              % integer mode number
-k0      = k0_mode*pi/L;   % physical wavenumber
+k0      = k0_mode*pi/Lx;   % physical wavenumber
 u0_fun  = @(x) A0 * sin(k0*x);
 v0_fun  = @(x) v0amp * sin(k0*x);
 
 for ic = 1:num_cases
     % --- snap steps so util asserts pass ---
     dx     = dx_array(ic);
-    Nx     = round(L/dx) + 1;
+    Nx     = round(Lx/dx) + 1;
     dt     = dx/c;                      % target CFL=1
     Nt     = round(T/dt) + 1;
     CFL    = c*dt/dx;
@@ -36,9 +50,9 @@ for ic = 1:num_cases
             ic, dx, dx, dt, CFL, Nx, Nt);
 
     % --- numerical solution on snapped grid ---
-    u_fdtd = run_fdtd_1D(u0_fun, v0_fun, L, T, c, dx, dt, gamma, nu);
+    u_fdtd = run_fdtd_1D(u0_fun, v0_fun, Lx, T, c, dx, dt, gamma, nu);
     % grid that matches u_fdtd
-    x = linspace(0,L,size(u_fdtd,1)).';
+    x = linspace(0,Lx,size(u_fdtd,1)).';
     t = linspace(0,T,size(u_fdtd,2));
 
     u_an = analytic_solution_single_mode(x, t, c, gamma, nu, k0, A0, v0amp);
