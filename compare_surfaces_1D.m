@@ -101,12 +101,6 @@ objfun_inf = @(x) obj_Linf( N, T, dt, J, c, gamma, nu, a, M, x(1), x(2), ky );
 min_theta1_inf = clip(x_opt_inf(1), theta1_min, theta1_max);
 min_theta2_inf = clip(x_opt_inf(2), theta2_min, theta2_max);
 
-%% Create results directory and save figures
-results_dir = 'analysis_results';
-if ~exist(results_dir, 'dir')
-    mkdir(results_dir);
-end
-
 %% Create main comparison figure
 theta1_range_plot = THETA1(1, :);
 theta2_range_plot = THETA2(:, 1)';
@@ -135,7 +129,6 @@ elseif nu == 0
 end
 % Make tick labels bigger
 set(gca, 'FontSize', 18);
-saveas(gcf, fullfile(results_dir, 'surface_comparison.png'));
 
 % %%
 % figure()
