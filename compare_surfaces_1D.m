@@ -18,30 +18,33 @@ dt = 0.002;
 % dh = 0.001;
 % dt = 0.001;
 
-% % Viscous damping case
-% % gamma = 0.1;
-% % gamma = 1;
-% % gamma = 5;
+% Viscous damping case
+% gamma = 4;
+gamma = 8;
 % gamma = 10;
-% nu = 0;
-% % k = 10;
-% k = 5*N;
-% % k = 40;
-
-% Viscoelastic damping case
-gamma = 0;
-nu = 0.01;
-% nu = 0.05;
-% nu = 0.5;
-% nu = 1;
+% gamma = 12;
+nu = 0;
 % k = 10;
 k = 5*N;
+% k = 40;
+
+% % Viscoelastic damping case
+% gamma = 0;
+% % nu = 0.005;
+% % nu = 0.01;
+% % nu = 0.1;
+% nu = 0.5;
+% % k = 10;
+% k = 5*N;
 
 % Parameter ranges
 % theta1_range = linspace(0, 1.2, 25);
 % theta2_range = linspace(-4, 8, 25);
 
-theta1_range = linspace(0, 1.2, 13);
+% theta1_range = linspace(0, 1.2, 13);
+% theta2_range = linspace(-4, 8, 13);
+
+theta1_range = linspace(0, 2, 13);
 theta2_range = linspace(-4, 8, 13);
 
 [THETA1, THETA2] = meshgrid(theta1_range, theta2_range);

@@ -33,14 +33,14 @@ v0  = @(x) v0amp * sin(k0*x);
 
 % --- 8 CASES
 cases = [
-    struct('gamma',0.1 ,'nu',0)
-    struct('gamma',1   ,'nu',0)
-    struct('gamma',5   ,'nu',0)
+    struct('gamma',4   ,'nu',0)
+    struct('gamma',8   ,'nu',0)
     struct('gamma',10  ,'nu',0)
+    struct('gamma',12  ,'nu',0)
+    struct('gamma',0   ,'nu',0.005)
     struct('gamma',0   ,'nu',0.01)
-    struct('gamma',0   ,'nu',0.05)
+    struct('gamma',0   ,'nu',0.1)
     struct('gamma',0   ,'nu',0.5)
-    struct('gamma',0   ,'nu',1)
 ];
 
 nCases = numel(cases);
@@ -101,20 +101,43 @@ for s = 1:nCases
 
     fprintf('  optimized p,q = (%.6f, %.6f), obj = %.3e\n', p_opt, q_opt, fval);
 
-    % Number of SWR iterations
+    % Number of SWR iterations for the "real" run
     if s < 5
         k = 60;
     else
-        k = 20;
+        k = 30;
     end
 
-    % SWR using optimized parameters (error vs fdtd inside run_swr_1D)
+    % ========================================================
+    % TEST RUN: 1 SWR iteration to get amplification factor F
+    % ========================================================
+    k_test = 1;
+
+    % Test run starting from common random u_init
+    [~, ~, res_history_test] = run_swr_1D( ...
+        u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_opt, q_opt, ...
+        k_test, u_init, u_ref);
+
+    % Error at iteration 0 for the test run
+    err0_test = max(abs(u_init(:) - u_ref(:))) / max(abs(u_ref(:)));
+
+    % Error after first SWR iteration in the test run
+    E1_test = res_history_test(1);
+
+    % Amplification factor F = E1 / E0
+    F = E1_test / err0_test;
+
+    % ========================================================
+    % REAL RUN: rescaled initial condition u_init / F
+    % ========================================================
+    u_init_scaled = u_init / F;
+
     [~, final_res, res_history] = run_swr_1D( ...
         u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_opt, q_opt, ...
-        k, u_init, u_ref);
+        k, u_init_scaled, u_ref);
 
-    % Error at iteration 0: initial guess u_init vs fdtd (relative Linf in space-time)
-    err0 = max(abs(u_init(:) - u_ref(:))) / max(abs(u_ref(:)));
+    % Initial error for the scaled run (relative Linf in space-time)
+    err0 = err0_test;
 
     % Prepend iteration-0 error to history
     res_hist{s}     = [err0; res_history(:)];

@@ -7,7 +7,6 @@ function res_surface = swr_error_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k,
     fprintf('Computing reference FDTD solution...\n');
     Lx = N*a + M;  % Calculate domain length
 
-
     % Initial conditions components
     gaussian = @(r,mu,sigma) 1/(2*pi*sigma^2) * exp(-(r-mu).^2/(2*sigma^2));
     
@@ -35,8 +34,6 @@ function res_surface = swr_error_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k,
     u0 = @(x) gaussian_normalized(x) + sine_sum_normalized(x);
     v0 = @(x) 0.*x;
 
-
-    % dt = dh/c;     % Calculate time step
     u_ref = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
     
     % Get dimensions from input matrices
@@ -49,9 +46,16 @@ function res_surface = swr_error_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k,
     Nx = round(Lx / dh) + 1;
     Nt = round(T / dt) + 1;
 
+    % Common random initial guess (same for all theta1, theta2)
     u_init = rand(Nx,Nt);
     % u_init = zeros(Nx,Nt);
     
+    % Error at iteration 0 (same for all parameter pairs)
+    err0_test = max(abs(u_init(:) - u_ref(:))) / max(abs(u_ref(:)));
+    
+    % Number of iterations for the test run
+    k_test = 1;
+
     % Main parameter sweep
     for ii = 1:num_cols
         for jj = 1:num_rows
@@ -64,13 +68,35 @@ function res_surface = swr_error_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k,
                     current_iteration/total_iterations*100, current_iteration, total_iterations, theta1, theta2);
             end
             
-            % Run SWR for this parameter combination
-            [~, final_res, ~] = run_swr_1D(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref);
+            % ------------------------------------------------------------
+            % TEST RUN: 1 SWR iteration to get amplification factor F
+            % ------------------------------------------------------------
+            [~, ~, res_history_test] = run_swr_1D( ...
+                u0, v0, N, a, M, T, c, dh, dt, gamma, nu, ...
+                theta1, theta2, k_test, u_init, u_ref);
+            
+            % Error after first SWR iteration in the test run
+            E1_test = res_history_test(1);
+            
+            % Amplification factor F = E1 / E0
+            F = E1_test / err0_test;
+            
+            % Guard against degenerate case
+            if F == 0
+                F = 1;
+            end
+            
+            % ------------------------------------------------------------
+            % REAL RUN: rescaled initial condition u_init / F
+            % ------------------------------------------------------------
+            u_init_scaled = u_init / F;
+            
+            [~, final_res, ~] = run_swr_1D( ...
+                u0, v0, N, a, M, T, c, dh, dt, gamma, nu, ...
+                theta1, theta2, k, u_init_scaled, u_ref);
             
             % Store final residual
             res_surface(jj, ii) = final_res;
-            
-            % fprintf('  Final residual after %d iterations: %.3e\n', k, final_res);
         end
     end
 end
