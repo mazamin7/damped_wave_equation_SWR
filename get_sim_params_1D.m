@@ -6,7 +6,7 @@ function P = get_sim_params_1D()
     P.a  = 0.3;
     P.M  = 0.1;
     P.b  = P.a + P.M;
-	P.Lx = N*a + M;
+	P.Lx = P.N * P.a + P.M;
 	P.T  = 5.0;
 
     % Physical parameters

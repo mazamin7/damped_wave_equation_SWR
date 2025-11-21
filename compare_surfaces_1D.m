@@ -23,25 +23,25 @@ J  = P.J;
 
 %%
 
-% % Viscous damping case
-% % gamma = 4;
-% % gamma = 8;
-% % gamma = 10;
+% Viscous damping case
+% gamma = 4;
+% gamma = 8;
+gamma = 10;
 % gamma = 12;
-% nu = 0;
-% % k = 10;
-% k = 5*N;
-% % k = 40;
-
-% Viscoelastic damping case
-gamma = 0;
-% nu = 0.001;
-% nu = 0.01;
-nu = 0.05;
-% nu = 0.1;
+nu = 0;
 % k = 10;
 k = 5*N;
-% k = 20;
+% k = 40;
+
+% % Viscoelastic damping case
+% gamma = 0;
+% % nu = 0.001;
+% % nu = 0.01;
+% nu = 0.05;
+% % nu = 0.1;
+% % k = 10;
+% k = 5*N;
+% % k = 20;
 
 % Parameter ranges
 % theta1_range = linspace(0, 1.2, 25);
@@ -112,10 +112,24 @@ figure()
 contourf(theta1_range_plot, theta2_range_plot, log10(error_surface), 50, 'LineStyle', 'none', 'HandleVisibility', 'off');
 axis xy;
 hold on;
-plot(theta1_initial, theta2_initial, 'ks', 'MarkerSize', 10, 'MarkerFaceColor', 'k', 'DisplayName', 'Initial guess');
-plot(min_theta1_swr, min_theta2_swr, 'rs', 'MarkerSize', 10, 'MarkerFaceColor', 'r', 'DisplayName', 'SWR error opt.');
-plot(min_theta1_p2,  min_theta2_p2,  'm*', 'MarkerSize', 10, 'MarkerFaceColor', 'm', 'DisplayName', 'Spectral opt. L2');
-plot(min_theta1_inf, min_theta2_inf, 'g^', 'MarkerSize', 10, 'MarkerFaceColor', 'g', 'DisplayName', 'Spectral opt. L∞');
+
+plot(theta1_initial, theta2_initial, 'ks', ...
+    'MarkerSize', 10, 'MarkerFaceColor', 'k', ...
+    'DisplayName', 'Initial guess');
+
+plot(min_theta1_swr, min_theta2_swr, 's', ...
+    'MarkerSize', 10, 'Color', "k", ...
+    'MarkerFaceColor', "w", ...
+    'DisplayName', 'SWR error opt.');
+
+plot(min_theta1_p2, min_theta2_p2, 'mo', ...
+    'MarkerSize', 10, 'MarkerFaceColor', 'm', ...
+    'DisplayName', 'Spectral opt. L2');
+
+plot(min_theta1_inf, min_theta2_inf, 'g^', ...
+    'MarkerSize', 10, 'MarkerFaceColor', 'g', ...
+    'DisplayName', 'Spectral opt. L∞');
+
 colorbar;
 xlabel('p', 'FontSize', 16);
 ylabel('q', 'FontSize', 16);
