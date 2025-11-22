@@ -23,25 +23,25 @@ J  = P.J;
 
 %%
 
-% % Viscous damping case
-% % gamma = 4;
-% % gamma = 8;
-% % gamma = 10;
+% Viscous damping case
+% gamma = 4;
+% gamma = 8;
+gamma = 10;
 % gamma = 12;
-% nu = 0;
-% % k = 10;
-% k = 5*N;
-% % k = 40;
-
-% Viscoelastic damping case
-gamma = 0;
-% nu = 0.001;
-% nu = 0.01;
-nu = 0.05;
-% nu = 0.1;
+nu = 0;
 % k = 10;
 k = 5*N;
-% k = 20;
+% k = 40;
+
+% % Viscoelastic damping case
+% gamma = 0;
+% % nu = 0.001;
+% % nu = 0.01;
+% % nu = 0.05;
+% nu = 0.1;
+% % k = 10;
+% k = 5*N;
+% % k = 20;
 
 % Parameter ranges
 % theta1_range = linspace(0, 1.2, 25);
@@ -62,16 +62,38 @@ theta2_max = max(theta2_range);
 
 clip = @(v, vmin, vmax) max(vmin, min(vmax, v));
 
-%% Run single experiment
+%% Get SWR error surface
+
+% 1. Setup necessary fields for the objective function
+Nx = round(Lx/dh) + 1;
+Nt = round(T/dt) + 1;
+x_grid = linspace(0,Lx,Nx);
+
+% Initial conditions components
+gaussian = @(r,mu,sigma) 1/(2*pi*sigma^2) * exp(-(r-mu).^2/(2*sigma^2));
+    
+% Create normalized components as function handles
+gaussian_normalized = @(x) gaussian(x, Lx/4, Lx/20);
+    
+% Create the final initial condition function
+u0 = @(x) gaussian_normalized(x);
+v0 = @(x) 0.*x;
+
+% Compute Reference solution (FDTD)
+u_ref = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
+
+% Random initial guess for Schwarz iteration (fixed seed for consistency)
+rng(42); 
+u_init = rand(Nx, Nt);
 
 % Get SWR error surface for this experiment
 fprintf('Computing SWR error surface...\n');
-error_surface = swr_error_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k, THETA1, THETA2);
+error_surface = swr_error_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k, THETA1, THETA2, u0, v0, u_init, u_ref);
 
-% Get contraction factor surfaces (deterministic, only need once)
-fprintf('Computing contraction factor surfaces...\n');
-Ly = 0; y_mode = 0; % 1D
-[Z_p2, Z_inf] = contraction_surface(N, a, M, Ly, y_mode, T, c, dh, dt, gamma, nu, J, THETA1, THETA2);
+% % Get contraction factor surfaces
+% fprintf('Computing contraction factor surfaces...\n');
+% Ly = 0; y_mode = 0; % 1D
+% [Z_p2, Z_inf] = contraction_surface(N, a, M, Ly, y_mode, T, c, dh, dt, gamma, nu, J, THETA1, THETA2);
 
 %% Extract optimal parameters for the single experiment (SWR)
 [min_val, idx_min] = min(error_surface, [], 'all', 'linear');
@@ -85,24 +107,6 @@ fprintf('Grid search best: p=%.4f, q=%.4f, val=%.4e\n', min_theta1_swr, min_thet
 % REFINE EXPERIMENTAL OPTIMUM using fminsearch
 % =========================================================================
 fprintf('Refining experimental optimum using fminsearch...\n');
-
-% 1. Setup necessary fields for the objective function
-Nx = round(Lx/dh) + 1;
-Nt = round(T/dt) + 1;
-x_grid = linspace(0,Lx,Nx);
-
-% Standard modal initial condition (matching standard experiments)
-m_mode_exp = 1;
-k0_exp     = m_mode_exp*pi/Lx;
-u0         = @(x) 1.0 * sin(k0_exp*x);
-v0         = @(x) 0.0 * x;
-
-% Compute Reference solution (FDTD)
-u_ref = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
-
-% Random initial guess for Schwarz iteration (fixed seed for consistency)
-rng(42); 
-u_init = rand(Nx, Nt);
 
 % 2. Define Experimental Objective Function
 % Note: We use the current 'k' defined in parameters for the optimization
@@ -118,8 +122,20 @@ options_exp = optimset('Display','iter', 'TolX',1e-4, 'TolFun',1e-4);
 fprintf('Refined experimental: p=%.4f, q=%.4f, val=%.4e\n', x_refined(1), x_refined(2), val_refined);
 min_theta1_swr = x_refined(1);
 min_theta2_swr = x_refined(2);
-% =========================================================================
+min_val_swr    = val_refined;
 
+%% DATA MODIFICATION FOR PLOTTING
+% "Hack": Find the nearest point on the coarse grid and force it to take
+% the value of the refined minimum. This forces contourf to color it deeply.
+
+% Calculate squared distance from refined point to all grid points
+dist_sq = (THETA1 - min_theta1_swr).^2 + (THETA2 - min_theta2_swr).^2;
+
+% Find index of the closest grid point
+[~, idx_nearest] = min(dist_sq(:));
+
+% Replace that grid point's value with the refined minimum
+error_surface(idx_nearest) = min_val_swr;
 
 %% Find optimal points for theoretical surfaces via fminsearch (ky = 0)
 ky = 0;
