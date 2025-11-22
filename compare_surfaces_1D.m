@@ -23,25 +23,25 @@ J  = P.J;
 
 %%
 
-% Viscous damping case
-% gamma = 4;
-% gamma = 8;
-gamma = 10;
+% % Viscous damping case
+% % gamma = 4;
+% % gamma = 8;
+% % gamma = 10;
 % gamma = 12;
-nu = 0;
-% k = 10;
-k = 5*N;
-% k = 40;
-
-% % Viscoelastic damping case
-% gamma = 0;
-% % nu = 0.001;
-% % nu = 0.01;
-% nu = 0.05;
-% % nu = 0.1;
+% nu = 0;
 % % k = 10;
 % k = 5*N;
-% % k = 20;
+% % k = 40;
+
+% Viscoelastic damping case
+gamma = 0;
+% nu = 0.001;
+% nu = 0.01;
+nu = 0.05;
+% nu = 0.1;
+% k = 10;
+k = 5*N;
+% k = 20;
 
 % Parameter ranges
 % theta1_range = linspace(0, 1.2, 25);
@@ -78,6 +78,48 @@ Ly = 0; y_mode = 0; % 1D
 [min_i, min_j] = ind2sub(size(error_surface), idx_min);
 min_theta1_swr = THETA1(min_i, min_j);
 min_theta2_swr = THETA2(min_i, min_j);
+
+fprintf('Grid search best: p=%.4f, q=%.4f, val=%.4e\n', min_theta1_swr, min_theta2_swr, min_val);
+
+% =========================================================================
+% REFINE EXPERIMENTAL OPTIMUM using fminsearch
+% =========================================================================
+fprintf('Refining experimental optimum using fminsearch...\n');
+
+% 1. Setup necessary fields for the objective function
+Nx = round(Lx/dh) + 1;
+Nt = round(T/dt) + 1;
+x_grid = linspace(0,Lx,Nx);
+
+% Standard modal initial condition (matching standard experiments)
+m_mode_exp = 1;
+k0_exp     = m_mode_exp*pi/Lx;
+u0         = @(x) 1.0 * sin(k0_exp*x);
+v0         = @(x) 0.0 * x;
+
+% Compute Reference solution (FDTD)
+u_ref = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
+
+% Random initial guess for Schwarz iteration (fixed seed for consistency)
+rng(42); 
+u_init = rand(Nx, Nt);
+
+% 2. Define Experimental Objective Function
+% Note: We use the current 'k' defined in parameters for the optimization
+objfun_exp = @(x) obj_exp(x, u0, v0, N, a, M, T, c, dh, dt, gamma, nu, k, u_init, u_ref);
+
+% 3. Run fminsearch starting from the Grid Best
+x0_refine = [min_theta1_swr, min_theta2_swr];
+options_exp = optimset('Display','iter', 'TolX',1e-4, 'TolFun',1e-4);
+
+[x_refined, val_refined] = fminsearch(objfun_exp, x0_refine, options_exp);
+
+% 4. Update the variables used for plotting
+fprintf('Refined experimental: p=%.4f, q=%.4f, val=%.4e\n', x_refined(1), x_refined(2), val_refined);
+min_theta1_swr = x_refined(1);
+min_theta2_swr = x_refined(2);
+% =========================================================================
+
 
 %% Find optimal points for theoretical surfaces via fminsearch (ky = 0)
 ky = 0;
@@ -189,7 +231,7 @@ set(gca, 'FontSize', 18);
 fprintf('\n=== RESULTS SUMMARY ===\n');
 
 fprintf('\nComparison of Methods:\n');
-fprintf('Method         theta1    theta2\n');
+fprintf('Method          theta1     theta2\n');
 fprintf('----------------------------------------------------------\n');
 fprintf('SWR error opt. %8.4f     %8.4f\n', min_theta1_swr, min_theta2_swr);
 fprintf('L2             %8.4f     %8.4f\n', min_theta1_p2,  min_theta2_p2);
