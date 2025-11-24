@@ -76,41 +76,42 @@ px = padding * (p_max - p_min);
 qx = padding * (q_max - q_min);
 
 %% VISUALIZATION SETTINGS
-% --- DRASTICALLY INCREASED SIZES FOR LATEX VISIBILITY ---
-FS_AXIS  = 30;  % Tick numbers (was 22)
-FS_LABEL = 36;  % x/y labels (was 24)
-LW_BOLD  = 4.0; % Line width (was 3.0)
-MS_DOTS  = 10; % Marker size (was 60)
-
+% Large fonts and thick lines for small LaTeX subfigures
+FS_AXIS = 22;
+FS_LABEL = 24;
+LW_BOLD = 3.0;
+MS_DOTS = 10;
 % --- EXPLICIT LAYOUT DEFINITIONS (Normalized 0 to 1) ---
-% We need large margins to fit the huge text.
-% 1. PLOT: Left=0.18 (for Y-label), Bottom=0.18, Width=0.52 (Narrower)
-POS_AX  = [0.18, 0.18, 0.52, 0.75]; 
+% 1. PLOT: Starts at 0.13, Width 0.66 (Ends at 0.79)
+POS_AX  = [0.13, 0.15, 0.66, 0.78]; 
 
-% 2. COLORBAR: Start=0.78 (Gap=0.08), Width=0.04
-POS_CB  = [0.78, 0.18, 0.04, 0.75]; 
+% 2. COLORBAR: Starts at 0.88 (Gap of 0.09 for label), Width 0.04, Ends at 0.92
+POS_CB  = [0.88, 0.15, 0.04, 0.78];
 
 %% Figure 1: Envelope and Scatter
-figure('Name','Envelope','Position',[100 100 900 650], 'Color', 'w');
+% We apply POS_AX here too. It will leave empty space on the right, 
+% but ensures the plot frame is identical to Figures 2-5.
+figure('Name','Envelope','Position',[100 100 800 600], 'Color', 'w');
 set(gcf, 'PaperPositionMode', 'auto');
 hold on; box on; grid on;
 
 valid = isfinite(p_opt) & isfinite(q_opt);
+
 % Plot dots
 scatter(p_opt(valid), q_opt(valid), MS_DOTS, [0.7 0.7 0.7], 'filled', ...
     'MarkerFaceAlpha', 0.5); 
+
 % Plot boundary
 plot(P_boundary, Q_boundary, 'k-', 'LineWidth', LW_BOLD);
 
 xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
 ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
-set(gca,'FontSize',FS_AXIS, 'LineWidth', 3, 'FontWeight', 'bold');
+set(gca,'FontSize',FS_AXIS, 'LineWidth', 2);
 xlim([p_min - px, p_max + px]);
 ylim([q_min - qx, q_max + qx]);
 
-% Apply layout (Creates empty space on right to match other figs)
-set(gca, 'Position', POS_AX); 
-
+% --- APPLY LAYOUT (No Colorbar) ---
+set(gca, 'Position', POS_AX);
 
 %% Figure 2: Isolines (Fixed Nu)
 nu_levels = logspace(-1, 0, 10);
@@ -120,7 +121,7 @@ for k = 1:numel(nu_levels)
 end
 nu_idx = unique(nu_idx);
 
-figure('Name','Isolines: Fixed Nu','Position',[150 150 900 650], 'Color', 'w');
+figure('Name','Isolines: Fixed Nu','Position',[150 150 800 600], 'Color', 'w');
 set(gcf, 'PaperPositionMode', 'auto'); 
 hold on; box on; grid on;
 
@@ -128,6 +129,7 @@ plot(P_boundary, Q_boundary, 'k-', 'LineWidth', LW_BOLD);
 
 num_curves = numel(nu_idx);
 cmap = parula(num_curves); 
+
 for k = 1:num_curves
     j = nu_idx(k);
     plot(p_opt(:,j), q_opt(:,j), '-', 'LineWidth', LW_BOLD, 'Color', cmap(k,:));
@@ -135,20 +137,23 @@ end
 
 xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
 ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
-set(gca,'FontSize',FS_AXIS, 'LineWidth', 3, 'FontWeight', 'bold');
+set(gca,'FontSize',FS_AXIS, 'LineWidth', 2);
 xlim([p_min - px, p_max + px]);
 ylim([q_min - qx, q_max + qx]);
 
-% --- LAYOUT & COLORBAR ---
-set(gca, 'Position', POS_AX);
-c = colorbar; colormap(cmap); c.Position = POS_CB;
+% --- FIX: Manual Positioning ---
+set(gca, 'Position', POS_AX); % Lock plot position
 
-c.Label.String = '\nu'; 
-c.Label.FontSize = FS_LABEL; 
+c = colorbar;
+colormap(cmap);
+c.Position = POS_CB; % Lock colorbar position further right
+
+c.Label.String = '\nu';
+c.Label.FontSize = FS_LABEL;
 c.Label.Rotation = 0; 
 c.Label.Units = 'normalized';
-% Move label further left (-2.0) to clear the larger tick numbers
-c.Label.Position = [-1.0, 0.5, 0]; 
+% Position label inside the gap (x < 0 relative to colorbar)
+c.Label.Position = [-0.8, 0.5, 0]; 
 c.Label.VerticalAlignment = 'middle';
 caxis([min(nu_levels) max(nu_levels)]);
 set(gca, 'ColorScale', 'log'); 
@@ -162,31 +167,38 @@ for k = 1:numel(gamma_levels)
 end
 gamma_idx = unique(gamma_idx);
 
-figure('Name','Isolines: Fixed Gamma','Position',[200 200 900 650], 'Color', 'w');
+figure('Name','Isolines: Fixed Gamma','Position',[200 200 800 600], 'Color', 'w');
 set(gcf, 'PaperPositionMode', 'auto');
 hold on; box on; grid on;
 
 plot(P_boundary, Q_boundary, 'k-', 'LineWidth', LW_BOLD);
-for k = 1:numel(gamma_idx)
+
+num_curves = numel(gamma_idx);
+cmap = parula(num_curves);
+
+for k = 1:num_curves
     i = gamma_idx(k);
     plot(p_opt(i,:), q_opt(i,:), '-', 'LineWidth', LW_BOLD, 'Color', cmap(k,:));
 end
 
 xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
 ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
-set(gca,'FontSize',FS_AXIS, 'LineWidth', 3, 'FontWeight', 'bold');
+set(gca,'FontSize',FS_AXIS, 'LineWidth', 2);
 xlim([p_min - px, p_max + px]);
 ylim([q_min - qx, q_max + qx]);
 
-% --- LAYOUT & COLORBAR ---
+% --- FIX: Manual Positioning ---
 set(gca, 'Position', POS_AX); 
-c = colorbar; colormap(cmap); c.Position = POS_CB;
 
-c.Label.String = '\gamma'; 
+c = colorbar;
+colormap(cmap);
+c.Position = POS_CB;
+
+c.Label.String = '\gamma';
 c.Label.FontSize = FS_LABEL;
 c.Label.Rotation = 0; 
 c.Label.Units = 'normalized';
-c.Label.Position = [-1.0, 0.5, 0]; 
+c.Label.Position = [-0.8, 0.5, 0]; 
 c.Label.VerticalAlignment = 'middle';
 caxis([min(gamma_levels) max(gamma_levels)]);
 set(gca, 'ColorScale', 'log');
@@ -202,7 +214,7 @@ Rgrid = F_rho(Pgrid, Qgrid);
 [in_poly, on_poly] = inpolygon(Pgrid, Qgrid, P_boundary, Q_boundary);
 Rgrid(~(in_poly | on_poly)) = NaN;
 
-figure('Name','Contraction p-q','Position',[250 250 900 650], 'Color', 'w');
+figure('Name','Contraction p-q','Position',[250 250 800 600], 'Color', 'w');
 set(gcf, 'PaperPositionMode', 'auto');
 hold on; box on; grid on;
 
@@ -211,65 +223,48 @@ plot(P_boundary, Q_boundary, 'k-', 'LineWidth', LW_BOLD);
 
 xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
 ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
-set(gca,'FontSize',FS_AXIS, 'LineWidth', 3, 'FontWeight', 'bold');
+set(gca,'FontSize',FS_AXIS, 'LineWidth', 2);
 xlim([p_min - px, p_max + px]);
 ylim([q_min - qx, q_max + qx]);
 
-% --- LAYOUT & COLORBAR ---
+% --- FIX: Manual Positioning ---
 set(gca, 'Position', POS_AX);
-c = colorbar; colormap(parula); c.Position = POS_CB;
+
+c = colorbar;
+colormap(parula);
+c.Position = POS_CB;
 
 c.Label.String = '\rho';
 c.Label.FontSize = FS_LABEL;
 c.Label.Rotation = 0; 
 c.Label.Units = 'normalized';
-c.Label.Position = [-1.0, 0.5, 0]; 
+c.Label.Position = [-0.8, 0.5, 0]; 
 c.Label.VerticalAlignment = 'middle';
-
-% Force 3 decimal places
-rng = caxis;
-ticks = linspace(rng(1), rng(2), 6); 
-c.Ticks = ticks;
-c.TickLabels = num2str(ticks', '%.3f');
 
 
 %% Figure 5: Contraction in Parameter Space
-figure('Name','Contraction gamma-nu','Position',[300 300 900 650], 'Color', 'w');
+figure('Name','Contraction gamma-nu','Position',[300 300 800 600], 'Color', 'w');
 set(gcf, 'PaperPositionMode', 'auto');
 hold on; box on; grid on;
 
 [GammaGrid, NuGrid] = meshgrid(gamma_vals, nu_vals);
 contourf(GammaGrid, NuGrid, rho_opt', 30, 'LineStyle', 'none');
 
-% Create the label and capture the handle 'h'
-h = xlabel('\gamma', 'FontSize', FS_LABEL, 'FontWeight', 'bold');
-
-% Switch units to normalized so (0,0) is bottom-left and (1,1) is top-right of the axis
-set(h, 'Units', 'normalized');
-
-% Set position: [x, y, z]
-% x = 0.5   (Center horizontally)
-% y = -0.08 (Vertical position. Standard is approx -0.12. 
-%            Increase this number to move it UP towards the axis line.)
-set(h, 'Position', [0.5, -0.11, 0]);
-
+xlabel('\gamma', 'FontSize', FS_LABEL, 'FontWeight', 'bold');
 ylabel('\nu',    'FontSize', FS_LABEL, 'FontWeight', 'bold');
-set(gca, 'FontSize', FS_AXIS, 'LineWidth', 3, 'FontWeight', 'bold');
+set(gca, 'FontSize', FS_AXIS, 'LineWidth', 2);
 set(gca, 'XScale', 'log', 'YScale', 'log');
 
-% --- LAYOUT & COLORBAR ---
+% --- FIX: Manual Positioning ---
 set(gca, 'Position', POS_AX);
-c = colorbar; colormap(parula); c.Position = POS_CB;
+
+c = colorbar;
+colormap(parula);
+c.Position = POS_CB;
 
 c.Label.String = '\rho';
 c.Label.FontSize = FS_LABEL;
 c.Label.Rotation = 0; 
 c.Label.Units = 'normalized';
-c.Label.Position = [-1.0, 0.5, 0]; 
+c.Label.Position = [-0.8, 0.5, 0]; 
 c.Label.VerticalAlignment = 'middle';
-
-% Force 3 decimal places
-rng = caxis;
-ticks = linspace(rng(1), rng(2), 6);
-c.Ticks = ticks;
-c.TickLabels = num2str(ticks', '%.3f');

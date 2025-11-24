@@ -42,7 +42,7 @@ for j = 1:Nn
             x0 = x_fallback;
         end
         if any(~isfinite(x0)), x0 = x_fallback; end
-        objfun = @(x) obj_Linf(N, T, dt, J, c, gamma, nu, a, M, x(1), x(2), ky);
+        objfun = @(x) obj_L2(N, T, dt, J, c, gamma, nu, a, M, x(1), x(2), ky);
         [x_opt, fval] = fminsearch(objfun, x0, optim_options);
         
         if ~isfinite(fval) || any(~isfinite(x_opt))
