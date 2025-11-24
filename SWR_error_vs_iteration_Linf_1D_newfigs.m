@@ -9,12 +9,10 @@ LW_BOLD  = 4.0; % Line width for curves
 MS_MARK  = 12;  % Marker size for trajectory points
 LW_AXIS  = 2.0; % Line width for the axis box
 
-% --- FIXED LAYOUT FOR FIGS 1 & 2 ---
-% Left=0.16, Bottom=0.18, Width=0.55, Height=0.72
-% This leaves 29% of the width on the right for the Legend
-POS_AX_CONV = [0.16, 0.18, 0.55, 0.72]; 
-% Manual Legend Position (Left=0.73, Bottom=Variable)
-POS_LGD_X   = 0.73; 
+% --- UPDATED LAYOUT: Standard Full Plot ---
+% We no longer need to reserve 29% space on the right.
+% Left=0.15, Bottom=0.15, Width=0.80, Height=0.80 (Approximation of standard)
+POS_AX_STD = [0.15, 0.15, 0.80, 0.78]; 
 
 % Simulation parameters
 P = get_sim_params_1D();
@@ -162,13 +160,13 @@ for s = 1:nCases
     final_errors(s) = final_res;
 end
 
+%%
 % ============================================================
 % FIGURE 1: gamma (nu=0) only optimized curves
 %           + horizontal line = FDTD vs GT final-time error
 % ============================================================
 figure('Name', 'Gamma Convergence', 'Color', 'w'); clf;
-% Force figure size to be wide enough for the side legend
-set(gcf, 'Position', [100 100 900 600]); 
+set(gcf, 'Position', [100 100 600 450]); % Standard size
 gamma_idx = find([cases.nu] == 0);
 
 h_curves = gobjects(numel(gamma_idx),1);
@@ -192,22 +190,20 @@ for j = 1:numel(gamma_idx)
              'HandleVisibility','off');
 end
 
-xlabel('Iteration','FontSize',FS_LABEL, 'FontWeight', 'bold');
-ylabel('Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
+% xlabel('Iteration','FontSize',FS_LABEL, 'FontWeight', 'bold');
+% ylabel('Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
 grid on; 
 set(gca,'FontSize',FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
 
-% --- FIX: STRICTLY IDENTICAL SIZE & MANUAL LEGEND ---
-set(gca, 'Position', POS_AX_CONV); % Lock axes position
+% --- FIX: Set Axes to Standard Size ---
+set(gca, 'Position', POS_AX_STD); 
 
 gamma_labels = arrayfun(@(c) sprintf('\\gamma=%.3g', c.gamma), cases(gamma_idx), ...
                         'UniformOutput', false);
 
-lgd = legend(h_curves, gamma_labels);
+% --- FIX: Legend Inside SouthWest ---
+lgd = legend(h_curves, gamma_labels, 'Location', 'SouthWest');
 set(lgd, 'FontSize', FS_AXIS);
-% Manually place legend to the right of the plot (X=0.73)
-set(lgd, 'Units', 'normalized');
-set(lgd, 'Position', [POS_LGD_X, 0.4, 0.2, 0.2]); % [left bottom width height]
 
 
 % ============================================================
@@ -215,7 +211,7 @@ set(lgd, 'Position', [POS_LGD_X, 0.4, 0.2, 0.2]); % [left bottom width height]
 %           + horizontal line = FDTD vs GT final-time error
 % ============================================================
 figure('Name', 'Nu Convergence', 'Color', 'w'); clf;
-set(gcf, 'Position', [150 150 900 600]); 
+set(gcf, 'Position', [150 150 600 450]); 
 nu_idx = find([cases.gamma] == 0);
 
 h_curves_nu = gobjects(numel(nu_idx),1);
@@ -239,23 +235,24 @@ for j = 1:numel(nu_idx)
              'HandleVisibility','off');
 end
 
-xlabel('Iteration','FontSize',FS_LABEL, 'FontWeight', 'bold');
-ylabel('Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
+% xlabel('Iteration','FontSize',FS_LABEL, 'FontWeight', 'bold');
+% ylabel('Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
 grid on; 
 set(gca,'FontSize',FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
 
-% --- FIX: STRICTLY IDENTICAL SIZE & MANUAL LEGEND ---
-set(gca, 'Position', POS_AX_CONV); % Lock axes position (Same as Fig 1)
+% --- FIX: Set Axes to Standard Size ---
+set(gca, 'Position', POS_AX_STD); 
 
 nu_labels = arrayfun(@(c) sprintf('\\nu=%.3g', c.nu), cases(nu_idx), ...
                      'UniformOutput', false);
 
-lgd = legend(h_curves_nu, nu_labels);
+% --- FIX: Legend Inside (NorthEast is usually better for Nu plots, but you asked for SouthWest) ---
+% Note: Nu plots usually decay fast, so SouthWest is empty.
+lgd = legend(h_curves_nu, nu_labels, 'Location', 'SouthWest'); 
 set(lgd, 'FontSize', FS_AXIS);
-set(lgd, 'Units', 'normalized');
-set(lgd, 'Position', [POS_LGD_X, 0.4, 0.2, 0.2]); % Exact same position as Fig 1
 
 
+%%
 % ============================================================
 % TRAJECTORY FIGURES
 % ============================================================
