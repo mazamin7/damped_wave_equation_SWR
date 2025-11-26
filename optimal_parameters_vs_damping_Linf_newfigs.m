@@ -14,9 +14,9 @@ padding = 0.05;
 
 %% Fine grid in (gamma, nu)
 Ng = 81;                        
-Nn = 81;           
+Nn = 81;          
 % Ng = 6;                        
-% Nn = 6;    
+% Nn = 6; 
 gamma_vals = logspace(-1, 1, Ng);   
 nu_vals    = logspace(-1, 0, Nn);   
 
@@ -64,9 +64,9 @@ P_gmax = fliplr(p_opt(i_gmax,:));  Q_gmax = fliplr(q_opt(i_gmax,:));
 P_nmin = flipud(p_opt(:,j_nmin));  Q_nmin = flipud(q_opt(:,j_nmin));
 P_nmax = p_opt(:,j_nmax);          Q_nmax = q_opt(:,j_nmax);
 
-P_boundary = [P_gmin,  P_nmax',  P_gmax,  Q_nmin']; % Note: Q_nmin index check logic maintained
+P_boundary = [P_gmin,  P_nmax',  P_gmax,  Q_nmin']; 
 Q_boundary = [Q_gmin,  Q_nmax',  Q_gmax,  Q_nmin']; 
-% Re-stitching logic from original script to ensure closure:
+% Re-stitching logic:
 P_boundary = [p_opt(i_gmin,:), p_opt(:,j_nmax)', fliplr(p_opt(i_gmax,:)), fliplr(p_opt(:,j_nmin)')];
 Q_boundary = [q_opt(i_gmin,:), q_opt(:,j_nmax)', fliplr(q_opt(i_gmax,:)), fliplr(q_opt(:,j_nmin)')];
 
@@ -75,42 +75,39 @@ q_min = min(Q_boundary); q_max = max(Q_boundary);
 px = padding * (p_max - p_min);
 qx = padding * (q_max - q_min);
 
-%% VISUALIZATION SETTINGS
-% Large fonts and thick lines for small LaTeX subfigures
-FS_AXIS = 22;
-FS_LABEL = 24;
-LW_BOLD = 3.0;
-MS_DOTS = 10;
-% --- EXPLICIT LAYOUT DEFINITIONS (Normalized 0 to 1) ---
-% 1. PLOT: Starts at 0.13, Width 0.66 (Ends at 0.79)
-POS_AX  = [0.13, 0.15, 0.66, 0.78]; 
+%% VISUALIZATION SETTINGS (POSTER STYLE)
+% These settings enforce the bold, large look you wanted
+FS_AXIS  = 26; 
+FS_LABEL = 28;
+LW_BOLD  = 4.0;
+MS_DOTS  = 10; % Large dots
 
-% 2. COLORBAR: Starts at 0.88 (Gap of 0.09 for label), Width 0.04, Ends at 0.92
-POS_CB  = [0.88, 0.15, 0.04, 0.78];
+% --- EXPLICIT LAYOUT DEFINITIONS ---
+% Locking these values prevents the plot from resizing when ticks have decimals
+POS_AX  = [0.15, 0.15, 0.64, 0.78]; 
+POS_CB  = [0.84, 0.15, 0.04, 0.78]; 
 
 %% Figure 1: Envelope and Scatter
-% We apply POS_AX here too. It will leave empty space on the right, 
-% but ensures the plot frame is identical to Figures 2-5.
-figure('Name','Envelope','Position',[100 100 800 600], 'Color', 'w');
+figure('Name','Envelope','Position',[100 100 800 700], 'Color', 'w');
 set(gcf, 'PaperPositionMode', 'auto');
 hold on; box on; grid on;
 
 valid = isfinite(p_opt) & isfinite(q_opt);
 
-% Plot dots
+% Plot dots with MS_DOTS
 scatter(p_opt(valid), q_opt(valid), MS_DOTS, [0.7 0.7 0.7], 'filled', ...
     'MarkerFaceAlpha', 0.5); 
 
-% Plot boundary
+% Plot boundary with LW_BOLD
 plot(P_boundary, Q_boundary, 'k-', 'LineWidth', LW_BOLD);
 
 xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
 ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
-set(gca,'FontSize',FS_AXIS, 'LineWidth', 2);
+set(gca,'FontSize',FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
 xlim([p_min - px, p_max + px]);
 ylim([q_min - qx, q_max + qx]);
 
-% --- APPLY LAYOUT (No Colorbar) ---
+% --- APPLY LAYOUT ---
 set(gca, 'Position', POS_AX);
 
 %% Figure 2: Isolines (Fixed Nu)
@@ -121,7 +118,7 @@ for k = 1:numel(nu_levels)
 end
 nu_idx = unique(nu_idx);
 
-figure('Name','Isolines: Fixed Nu','Position',[150 150 800 600], 'Color', 'w');
+figure('Name','Isolines: Fixed Nu','Position',[150 150 800 700], 'Color', 'w');
 set(gcf, 'PaperPositionMode', 'auto'); 
 hold on; box on; grid on;
 
@@ -137,27 +134,26 @@ end
 
 xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
 ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
-set(gca,'FontSize',FS_AXIS, 'LineWidth', 2);
+set(gca,'FontSize',FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
 xlim([p_min - px, p_max + px]);
 ylim([q_min - qx, q_max + qx]);
 
-% --- FIX: Manual Positioning ---
-set(gca, 'Position', POS_AX); % Lock plot position
+% --- FIX: Manual Positioning & Colorbar ---
+set(gca, 'Position', POS_AX); 
 
 c = colorbar;
 colormap(cmap);
-c.Position = POS_CB; % Lock colorbar position further right
+c.Position = POS_CB;
 
 c.Label.String = '\nu';
 c.Label.FontSize = FS_LABEL;
+c.Label.FontWeight = 'bold';
 c.Label.Rotation = 0; 
 c.Label.Units = 'normalized';
-% Position label inside the gap (x < 0 relative to colorbar)
-c.Label.Position = [-0.8, 0.5, 0]; 
+c.Label.Position = [-0.6, 0.5, 0]; 
 c.Label.VerticalAlignment = 'middle';
 caxis([min(nu_levels) max(nu_levels)]);
 set(gca, 'ColorScale', 'log'); 
-
 
 %% Figure 3: Isolines (Fixed Gamma)
 gamma_levels = logspace(-1, 1, 10);
@@ -167,7 +163,7 @@ for k = 1:numel(gamma_levels)
 end
 gamma_idx = unique(gamma_idx);
 
-figure('Name','Isolines: Fixed Gamma','Position',[200 200 800 600], 'Color', 'w');
+figure('Name','Isolines: Fixed Gamma','Position',[200 200 800 700], 'Color', 'w');
 set(gcf, 'PaperPositionMode', 'auto');
 hold on; box on; grid on;
 
@@ -183,11 +179,11 @@ end
 
 xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
 ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
-set(gca,'FontSize',FS_AXIS, 'LineWidth', 2);
+set(gca,'FontSize',FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
 xlim([p_min - px, p_max + px]);
 ylim([q_min - qx, q_max + qx]);
 
-% --- FIX: Manual Positioning ---
+% --- FIX: Manual Positioning & Colorbar ---
 set(gca, 'Position', POS_AX); 
 
 c = colorbar;
@@ -196,13 +192,13 @@ c.Position = POS_CB;
 
 c.Label.String = '\gamma';
 c.Label.FontSize = FS_LABEL;
+c.Label.FontWeight = 'bold';
 c.Label.Rotation = 0; 
 c.Label.Units = 'normalized';
-c.Label.Position = [-0.8, 0.5, 0]; 
+c.Label.Position = [-0.6, 0.5, 0]; 
 c.Label.VerticalAlignment = 'middle';
 caxis([min(gamma_levels) max(gamma_levels)]);
 set(gca, 'ColorScale', 'log');
-
 
 %% Figure 4: Contour of Global Contraction
 mask_scatt = isfinite(p_opt) & isfinite(q_opt) & isfinite(rho_opt);
@@ -223,11 +219,11 @@ plot(P_boundary, Q_boundary, 'k-', 'LineWidth', LW_BOLD);
 
 xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
 ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
-set(gca,'FontSize',FS_AXIS, 'LineWidth', 2);
+set(gca,'FontSize',FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
 xlim([p_min - px, p_max + px]);
 ylim([q_min - qx, q_max + qx]);
 
-% --- FIX: Manual Positioning ---
+% --- FIX: Manual Positioning & Colorbar ---
 set(gca, 'Position', POS_AX);
 
 c = colorbar;
@@ -236,11 +232,11 @@ c.Position = POS_CB;
 
 c.Label.String = '\rho';
 c.Label.FontSize = FS_LABEL;
+c.Label.FontWeight = 'bold';
 c.Label.Rotation = 0; 
 c.Label.Units = 'normalized';
-c.Label.Position = [-0.8, 0.5, 0]; 
+c.Label.Position = [-1.2, 0.5, 0]; 
 c.Label.VerticalAlignment = 'middle';
-
 
 %% Figure 5: Contraction in Parameter Space
 figure('Name','Contraction gamma-nu','Position',[300 300 800 600], 'Color', 'w');
@@ -252,10 +248,10 @@ contourf(GammaGrid, NuGrid, rho_opt', 30, 'LineStyle', 'none');
 
 xlabel('\gamma', 'FontSize', FS_LABEL, 'FontWeight', 'bold');
 ylabel('\nu',    'FontSize', FS_LABEL, 'FontWeight', 'bold');
-set(gca, 'FontSize', FS_AXIS, 'LineWidth', 2);
+set(gca, 'FontSize', FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
 set(gca, 'XScale', 'log', 'YScale', 'log');
 
-% --- FIX: Manual Positioning ---
+% --- FIX: Manual Positioning & Colorbar ---
 set(gca, 'Position', POS_AX);
 
 c = colorbar;
@@ -264,7 +260,8 @@ c.Position = POS_CB;
 
 c.Label.String = '\rho';
 c.Label.FontSize = FS_LABEL;
+c.Label.FontWeight = 'bold';
 c.Label.Rotation = 0; 
 c.Label.Units = 'normalized';
-c.Label.Position = [-0.8, 0.5, 0]; 
+c.Label.Position = [-1.2, 0.5, 0]; 
 c.Label.VerticalAlignment = 'middle';
