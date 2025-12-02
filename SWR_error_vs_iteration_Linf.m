@@ -15,7 +15,7 @@ LW_AXIS  = 2.0; % Line width for the axis box
 POS_AX_STD = [0.15, 0.15, 0.80, 0.78]; 
 
 % Simulation parameters
-P = get_sim_params_1D();
+P = get_sim_params();
 
 N  = P.N;
 a  = P.a;
@@ -69,7 +69,6 @@ opt_obj_vals    = zeros(nCases,1);
 ref_gt_errors   = zeros(nCases,1);   % FDTD vs GT (final time) error
 
 x0 = [1.0/c, 0];     % Initial guess (p,q)
-ky = 0;
 
 global PQ_history
 PQ_history = cell(nCases,1);
@@ -95,13 +94,13 @@ for s = 1:nCases
                                          k0, A0, v0amp);
 
     % FDTD reference solution (as in original code)
-    u_ref = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
+    u_ref = run_fdtd(u0, v0, Lx, T, c, dh, dt, gamma, nu);
 
     % Final-time relative error between FDTD and GT (L-infinity in space)
     ref_gt_errors(s) = max(abs(u_ref(:,end) - u_gt(:,end))) / max(abs(u_gt(:,end)));
 
     % Objective (assumed to use gamma, nu, etc., as in your current obj_Linf)
-    objfun = @(x) obj_Linf(N,T,dt,J,c,gamma,nu,a,M,x(1),x(2),ky);
+    objfun = @(x) obj_Linf(N,T,dt,J,c,gamma,nu,a,M,x(1),x(2));
 
     % Save trajectory
     outfun = @(x,optimvalues,state) store_trajectory(x,optimvalues,state,s);
@@ -130,7 +129,7 @@ for s = 1:nCases
     k_test = 1;
 
     % Test run starting from common random u_init
-    [~, ~, res_history_test] = run_swr_1D( ...
+    [~, ~, res_history_test] = run_swr( ...
         u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_opt, q_opt, ...
         k_test, u_init, u_ref);
 
@@ -148,7 +147,7 @@ for s = 1:nCases
     % ========================================================
     u_init_scaled = u_init / F;
 
-    [~, final_res, res_history] = run_swr_1D( ...
+    [~, final_res, res_history] = run_swr( ...
         u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_opt, q_opt, ...
         k, u_init_scaled, u_ref);
 
@@ -263,7 +262,7 @@ for s = 1:nCases
     gamma = cases(s).gamma;
     nu    = cases(s).nu;
 
-    objfun_pq = @(p,q) obj_Linf(N,T,dt,J,c,gamma,nu,a,M,p,q,ky);
+    objfun_pq = @(p,q) obj_Linf(N,T,dt,J,c,gamma,nu,a,M,p,q);
 
     pmin = min(pq(:,1)); pmax = max(pq(:,1));
     qmin = min(pq(:,2)); qmax = max(pq(:,2));

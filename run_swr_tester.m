@@ -1,4 +1,4 @@
-% QUICK_TEST_RUN_SWR_1D - Compare FDTD, SWR Dirichlet, and SWR Robin in 1D
+% QUICK_TEST_RUN_SWR - Compare FDTD, SWR Dirichlet, and SWR Robin in 1D
 clear all; close all; clc;
 
 addpath("utils\")
@@ -6,7 +6,7 @@ addpath("utils\")
 fprintf('Comparing FDTD, SWR Dirichlet, and SWR Robin in 1D...\n');
 
 % Parameters
-P = get_sim_params_1D();
+P = get_sim_params();
 
 N  = P.N;
 a  = P.a;
@@ -18,6 +18,7 @@ T  = P.T;
 c  = P.c;
 gamma = P.gamma;
 nu = P.nu;
+nu = 0.5;
 
 dh = P.dh;
 dt = P.dt;
@@ -75,7 +76,7 @@ sgtitle('Initial Conditions')
 
 %% Compute reference solution with FDTD
 fprintf('Computing reference solution with FDTD...\n');
-u_ref = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
+u_ref = run_fdtd(u0, v0, Lx, T, c, dh, dt, gamma, nu);
 
 % sizes consistent with snapped steps
 Nx = size(u_ref,1);
@@ -88,7 +89,7 @@ u_init = rand(Nx,Nt);    % match sizes of u_ref
 fprintf('Running SWR with Dirichlet interfaces...\n');
 tic;
 [ud_dirichlet, final_res_dirichlet, res_history_dirichlet] = ...
-    run_swr_dirichlet_1D(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, k, u_init, u_ref);
+    run_swr_dirichlet(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, k, u_init, u_ref);
 time_dirichlet = toc;
 
 fprintf('Dirichlet Results:\n');
@@ -100,7 +101,7 @@ fprintf('  Time: %.2f seconds\n', time_dirichlet);
 fprintf('Running SWR with Robin interfaces...\n');
 tic;
 [ud_robin, final_res_robin, res_history_robin] = ...
-    run_swr_1D(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref);
+    run_swr(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, theta1, theta2, k, u_init, u_ref);
 time_robin = toc;
 
 fprintf('Robin Results:\n');

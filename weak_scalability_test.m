@@ -4,7 +4,7 @@ clear; close all; clc;
 addpath('utils\')
 
 % Simulation parameters
-P = get_sim_params_1D();
+P = get_sim_params();
 
 N  = P.N; % ignore
 a  = P.a;
@@ -44,9 +44,8 @@ q_opt = zeros(numel(N_list),1);
 tol = 1e-6;
 options = optimset('Display','off','TolX',tol,'TolFun',tol);
 x0 = [1/c, 0];                 % warm start for (p,q)
-ky = 0;                        % optimize along normal incidence
-objfun = @(N,T,dt,J,c,gamma,nu,a,M,p,q,ky) ...
-           obj_Linf(N,T,dt,J,c,gamma,nu,a,M,p,q,ky);   % user-provided
+objfun = @(N,T,dt,J,c,gamma,nu,a,M,p,q) ...
+           obj_Linf(N,T,dt,J,c,gamma,nu,a,M,p,q);   % user-provided
 
 for ii = 1:numel(N_list)
     N = N_list(ii);
@@ -57,17 +56,16 @@ for ii = 1:numel(N_list)
     Lx  = bj(N);
 
     % grids
-    Nx = round(Lx/dh) + 1;  % Ny = round(Ly/dh) + 1;
+    Nx = round(Lx/dh) + 1;
     x_axis = linspace(0,Lx,Nx);
-    % y_axis = linspace(0,Ly,Ny);
 
-    % ICs depend on domain size (Gaussian velocity bump near (Lx/3,Ly/3))
+    % ICs
     v0_fun = @(x) exp(-sqrt((x-Lx/3).^2));
 
     % reference and initial guess
     fprintf('[N=%d] building reference...\n',N);
     tic;
-    u_ref  = run_fdtd_1D(u0_fun, v0_fun, Lx, T, c, dh, dt, gamma, nu);
+    u_ref  = run_fdtd(u0_fun, v0_fun, Lx, T, c, dh, dt, gamma, nu);
     tref = toc; %#ok<NASGU>
     u_init = rand(size(u_ref));
 
@@ -75,7 +73,7 @@ for ii = 1:numel(N_list)
     Nt = size(u_ref,3);     % J in your notation
     J  = Nt;
     fprintf('[N=%d] optimizing (p,q)...\n',N);
-    f = @(x) objfun(N,T,dt,J,c,gamma,nu,a,M,x(1),x(2),ky);
+    f = @(x) objfun(N,T,dt,J,c,gamma,nu,a,M,x(1),x(2));
     [x_opt, ~] = fminsearch(f, x0, options);
     p = x_opt(1);  q = x_opt(2);
     % p = 1/c; q = 0;
@@ -88,7 +86,7 @@ for ii = 1:numel(N_list)
     % run SWR with optimized (p,q)
     fprintf('[N=%d] SWR Robin with p=%.3g, q=%.3g...\n',N,p,q);
     tic;
-    [~, final_res(ii), ~] = run_swr_1D(u0_fun, v0_fun, N, a, M, T, c, dh, dt, gamma, nu, p, q, k, u_init, u_ref);
+    [~, final_res(ii), ~] = run_swr(u0_fun, v0_fun, N, a, M, T, c, dh, dt, gamma, nu, p, q, k, u_init, u_ref);
     time_robin(ii) = toc;
 
     % weak-scaling bookkeeping

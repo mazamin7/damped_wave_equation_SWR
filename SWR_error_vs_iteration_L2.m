@@ -1,8 +1,21 @@
 clear all; close all; clc;
 addpath("utils\")
 
+%% VISUALIZATION SETTINGS (POSTER STYLE)
+FS_AXIS  = 24;  % Font size for axis ticks
+FS_LABEL = 30;  % Font size for X/Y labels
+FS_TITLE = 28;  % Font size for titles
+LW_BOLD  = 4.0; % Line width for curves
+MS_MARK  = 12;  % Marker size for trajectory points
+LW_AXIS  = 2.0; % Line width for the axis box
+
+% --- UPDATED LAYOUT: Standard Full Plot ---
+% We no longer need to reserve 29% space on the right.
+% Left=0.15, Bottom=0.15, Width=0.80, Height=0.80 (Approximation of standard)
+POS_AX_STD = [0.15, 0.15, 0.80, 0.78]; 
+
 % Simulation parameters
-P = get_sim_params_1D();
+P = get_sim_params();
 
 N  = P.N;
 a  = P.a;
@@ -56,7 +69,6 @@ opt_obj_vals    = zeros(nCases,1);
 ref_gt_errors   = zeros(nCases,1);   % FDTD vs GT (final time) error
 
 x0 = [1.0/c, 0];     % Initial guess (p,q)
-ky = 0;
 
 global PQ_history
 PQ_history = cell(nCases,1);
@@ -82,13 +94,13 @@ for s = 1:nCases
                                          k0, A0, v0amp);
 
     % FDTD reference solution (as in original code)
-    u_ref = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
+    u_ref = run_fdtd(u0, v0, Lx, T, c, dh, dt, gamma, nu);
 
     % Final-time relative error between FDTD and GT (L-infinity in space)
     ref_gt_errors(s) = max(abs(u_ref(:,end) - u_gt(:,end))) / max(abs(u_gt(:,end)));
 
-    % Objective (assumed to use gamma, nu, etc., as in your current obj_Linf)
-    objfun = @(x) obj_Linf(N,T,dt,J,c,gamma,nu,a,M,x(1),x(2),ky);
+    % Objective (assumed to use gamma, nu, etc., as in your current obj_L2)
+    objfun = @(x) obj_L2(N,T,dt,J,c,gamma,nu,a,M,x(1),x(2));
 
     % Save trajectory
     outfun = @(x,optimvalues,state) store_trajectory(x,optimvalues,state,s);
@@ -117,7 +129,7 @@ for s = 1:nCases
     k_test = 1;
 
     % Test run starting from common random u_init
-    [~, ~, res_history_test] = run_swr_1D( ...
+    [~, ~, res_history_test] = run_swr( ...
         u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_opt, q_opt, ...
         k_test, u_init, u_ref);
 
@@ -135,11 +147,11 @@ for s = 1:nCases
     % ========================================================
     u_init_scaled = u_init / F;
 
-    [~, final_res, res_history] = run_swr_1D( ...
+    [~, final_res, res_history] = run_swr( ...
         u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_opt, q_opt, ...
         k, u_init_scaled, u_ref);
 
-    % Initial error for the scaled run (relative Linf in space-time)
+    % Initial error for the scaled run (relative L2 in space-time)
     err0 = err0_test;
 
     % Prepend iteration-0 error to history
@@ -147,12 +159,13 @@ for s = 1:nCases
     final_errors(s) = final_res;
 end
 
+%%
 % ============================================================
 % FIGURE 1: gamma (nu=0) only optimized curves
-%          + horizontal line = FDTD vs GT final-time error
-%          conservative color handling, including iteration 0
+%           + horizontal line = FDTD vs GT final-time error
 % ============================================================
-figure(1); clf;
+figure('Name', 'Gamma Convergence', 'Color', 'w'); clf;
+set(gcf, 'Position', [100 100 600 450]); % Standard size
 gamma_idx = find([cases.nu] == 0);
 
 h_curves = gobjects(numel(gamma_idx),1);
@@ -163,39 +176,41 @@ for j = 1:numel(gamma_idx)
     nIter  = numel(resvec) - 1;     % iterations 0..nIter
     its    = 0:nIter;
 
-    % SWR error history: let MATLAB choose the color
-    h = semilogy(its, resvec, 'LineWidth', 2);
+    h = semilogy(its, resvec, 'LineWidth', LW_BOLD);
     hold on;
-    col = get(h,'Color');           % color actually used
+    col = get(h,'Color');            
 
-    % Store handle for legend
     h_curves(j) = h;
 
-    % Horizontal line: FDTD vs GT final-time error (same color, dashed)
     semilogy([0 nIter], ref_gt_errors(s)*[1 1], ...
-             'LineWidth', 1.5, ...
+             'LineWidth', LW_AXIS, ...
              'LineStyle', '--', ...
              'Color', col, ...
              'HandleVisibility','off');
 end
 
-xlabel('Iteration','FontSize',16);
-ylabel('Error','FontSize',16);
-grid on; set(gca,'FontSize',18);
+% xlabel('Iteration','FontSize',FS_LABEL, 'FontWeight', 'bold');
+% ylabel('Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
+grid on; 
+set(gca,'FontSize',FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
 
-% ylim([1e-10, 1e10])
+% --- FIX: Set Axes to Standard Size ---
+set(gca, 'Position', POS_AX_STD); 
 
-% Automatic labels: only gamma (nu=0)
 gamma_labels = arrayfun(@(c) sprintf('\\gamma=%.3g', c.gamma), cases(gamma_idx), ...
                         'UniformOutput', false);
-legend(h_curves, gamma_labels,'Location','SouthWest');
+
+% --- FIX: Legend Inside SouthWest ---
+lgd = legend(h_curves, gamma_labels, 'Location', 'SouthWest');
+set(lgd, 'FontSize', FS_AXIS);
+
 
 % ============================================================
 % FIGURE 2: nu (gamma=0) only optimized curves
-%          + horizontal line = FDTD vs GT final-time error
-%          conservative color handling, including iteration 0
+%           + horizontal line = FDTD vs GT final-time error
 % ============================================================
-figure(2); clf;
+figure('Name', 'Nu Convergence', 'Color', 'w'); clf;
+set(gcf, 'Position', [150 150 600 450]); 
 nu_idx = find([cases.gamma] == 0);
 
 h_curves_nu = gobjects(numel(nu_idx),1);
@@ -206,31 +221,37 @@ for j = 1:numel(nu_idx)
     nIter  = numel(resvec) - 1;     % iterations 0..nIter
     its    = 0:nIter;
 
-    % SWR error history: let MATLAB choose the color
-    h = semilogy(its, resvec, 'LineWidth', 2);
+    h = semilogy(its, resvec, 'LineWidth', LW_BOLD);
     hold on;
     col = get(h,'Color');
 
-    % Store handle for legend
     h_curves_nu(j) = h;
 
-    % Horizontal line: FDTD vs GT final-time error (same color, dashed)
     semilogy([0 nIter], ref_gt_errors(s)*[1 1], ...
-             'LineWidth', 1.5, ...
+             'LineWidth', LW_AXIS, ...
              'LineStyle', '--', ...
              'Color', col, ...
              'HandleVisibility','off');
 end
 
-xlabel('Iteration','FontSize',16);
-ylabel('Error','FontSize',16);
-grid on; set(gca,'FontSize',18);
+% xlabel('Iteration','FontSize',FS_LABEL, 'FontWeight', 'bold');
+% ylabel('Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
+grid on; 
+set(gca,'FontSize',FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
 
-% Automatic labels: only nu (gamma=0)
+% --- FIX: Set Axes to Standard Size ---
+set(gca, 'Position', POS_AX_STD); 
+
 nu_labels = arrayfun(@(c) sprintf('\\nu=%.3g', c.nu), cases(nu_idx), ...
                      'UniformOutput', false);
-legend(h_curves_nu, nu_labels,'Location','NorthEast');
 
+% --- FIX: Legend Inside (NorthEast is usually better for Nu plots, but you asked for SouthWest) ---
+% Note: Nu plots usually decay fast, so SouthWest is empty.
+lgd = legend(h_curves_nu, nu_labels, 'Location', 'SouthWest'); 
+set(lgd, 'FontSize', FS_AXIS);
+
+
+%%
 % ============================================================
 % TRAJECTORY FIGURES
 % ============================================================
@@ -241,7 +262,7 @@ for s = 1:nCases
     gamma = cases(s).gamma;
     nu    = cases(s).nu;
 
-    objfun_pq = @(p,q) obj_Linf(N,T,dt,J,c,gamma,nu,a,M,p,q,ky);
+    objfun_pq = @(p,q) obj_L2(N,T,dt,J,c,gamma,nu,a,M,p,q);
 
     pmin = min(pq(:,1)); pmax = max(pq(:,1));
     qmin = min(pq(:,2)); qmax = max(pq(:,2));
@@ -255,16 +276,26 @@ for s = 1:nCases
 
     Z = arrayfun(@(pp,qq) objfun_pq(pp,qq), P, Q);
 
-    figure(2+s); clf; hold on;
-    contourf(P, Q, log10(Z), 20, 'LineStyle','none'); colorbar;
+    figure('Name', sprintf('Traj Case %d', s), 'Color', 'w'); clf; hold on;
+    contourf(P, Q, log10(Z), 20, 'LineStyle','none'); 
+    
+    cb = colorbar;
+    cb.FontSize = FS_AXIS;
+    cb.Label.String = 'log_{10}(Obj)';
+    cb.Label.FontSize = FS_AXIS;
 
-    plot(pq(:,1), pq(:,2), '-o', 'LineWidth',2, 'Color','k');
-    plot(pq(1,1),  pq(1,2),  'ws', 'MarkerSize',10,'LineWidth',2);
-    plot(pq(end,1),pq(end,2),'rx', 'MarkerSize',12,'LineWidth',2);
+    plot(pq(:,1), pq(:,2), '-o', 'LineWidth',LW_BOLD, 'Color','k', 'MarkerSize', 6);
+    plot(pq(1,1),  pq(1,2),  'ws', 'MarkerSize',MS_MARK, 'LineWidth',3, 'MarkerFaceColor', 'k');
+    plot(pq(end,1),pq(end,2),'rpentagram', 'MarkerSize',MS_MARK+5, 'LineWidth',3, 'MarkerFaceColor', 'r');
 
-    xlabel('p'); ylabel('q');
-    title(sprintf('\\gamma=%.3g, \\nu=%.3g — fminsearch trajectory', gamma, nu));
-    grid on; set(gca,'FontSize',18);
+    xlabel('p', 'FontSize', FS_LABEL, 'FontWeight', 'bold'); 
+    ylabel('q', 'FontSize', FS_LABEL, 'FontWeight', 'bold');
+    
+    title_str = sprintf('\\gamma=%.3g, \\nu=%.3g', gamma, nu);
+    title(title_str, 'FontSize', FS_TITLE, 'FontWeight', 'bold');
+    
+    grid on; 
+    set(gca,'FontSize',FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
 end
 
 % ============================================================

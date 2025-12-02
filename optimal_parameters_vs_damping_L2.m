@@ -1,283 +1,378 @@
+%% CLEAN UP AND SETUP
+% Clear workspace, close figures, clear command window
 clear; close all; clc;
 
+% Add utility functions directory to MATLAB path
 addpath("utils\")
 
-%% Common parameters
-P = get_sim_params_1D();
+%% COMMON PARAMETERS AND SIMULATION SETUP
+% Load simulation parameters from get_sim_params() function
+P = get_sim_params();
 
-N  = P.N;
-a  = P.a;
-M  = P.M;
-b  = P.b;
-Lx = P.Lx;
-T  = P.T;
+% Extract parameters from structure
+N  = P.N;      % Number of grid points or system size
+a  = P.a;      % System parameter
+M  = P.M;      % Another system parameter
+T  = P.T;      % Total simulation time
+c  = P.c;      % Wave speed or similar constant
+dt = P.dt;     % Time step size
+J  = P.J;      % Parameter for objective function
 
-c  = P.c;
-gamma = P.gamma; % ignore
-nu = P.nu; % ignore
+% Optimization parameter
 
-dh = P.dh;
-dt = P.dt;
-J  = P.J;
+%% OPTIMIZATION CONFIGURATION
+tol = 1e-9;        % Tolerance for optimization convergence
+padding = 0.05;    % Padding for plot axis limits (5% extra space)
 
-%%
-ky = 0;         % 1D case
+%% FINE GRID DEFINITION FOR PARAMETER SPACE EXPLORATION
+% Create logarithmic grids for gamma and nu parameters
+Ng = 81;        % Number of grid points for gamma (reduced to 6 for testing)
+Nn = 81;        % Number of grid points for nu (reduced to 6 for testing)
 
-% Optimization parameters
-tol = 1e-9;
+% Log-spaced parameter ranges:
+% gamma from 10^(-1) to 10^1 = [0.1, 10]
+% nu from 10^(-1) to 10^0 = [0.1, 1]
+gamma_vals = logspace(-1, 1, Ng);   
+nu_vals    = logspace(-1, 0, Nn);   
 
-padding = 0.1;
+% Preallocate arrays to store optimization results
+p_opt   = zeros(Ng, Nn);   % Optimal p values
+q_opt   = zeros(Ng, Nn);   % Optimal q values
+rho_opt = zeros(Ng, Nn);   % Optimal contraction rates (objective values)
 
-%% Fine grid in (gamma, nu)
+%% OPTIMIZATION SETUP
+% Configure MATLAB's optimization options
+optim_options = optimset('Display', 'off', ...    % Suppress iteration output
+                         'TolX', tol, ...         % Tolerance on parameter changes
+                         'TolFun', tol, ...       % Tolerance on function value
+                         'MaxFunEvals', 2e4, ...  % Maximum function evaluations
+                         'MaxIter', 2e4);         % Maximum iterations
 
-% Gamma in (0.1, 10), nu in (0.1, 1)
-Ng = 81;                        % number of gamma samples
-Nn = 81;                        % number of nu samples
-gamma_vals = logspace(-1, 1, Ng);   % 10^{-1} .. 10^{1}
-nu_vals    = logspace(-1, 0, Nn);   % 10^{-1} .. 10^{0}
+% Fallback initial guess if other initialization methods fail
+x_fallback = [1/c, 0];  % Reasonable default: [p0, q0]
 
-% Storage for optimal (p,q) and contraction
-p_opt   = zeros(Ng, Nn);
-q_opt   = zeros(Ng, Nn);
-rho_opt = zeros(Ng, Nn);
-
-% Optimization settings
-optim_options = optimset('Display', 'off', ...
-                         'TolX', tol, 'TolFun', tol, ...
-                         'MaxFunEvals', 2e4, 'MaxIter', 2e4);
-
-x_fallback = [1/c, 0];
-
+%% MAIN OPTIMIZATION LOOP OVER PARAMETER GRID
 fprintf('=== Computing optimal (p,q) on fine (gamma,nu) grid ===\n');
+
+% Loop over nu values (outer loop)
 for j = 1:Nn
     nu = nu_vals(j);
     fprintf('  Row %d/%d (nu = %.3f)\n', j, Nn, nu);
+    
+    % Loop over gamma values (inner loop)
     for i = 1:Ng
         gamma = gamma_vals(i);
-
-        % Warm-start: use neighbor in gamma or nu if available
+        
+        %% SMART INITIALIZATION STRATEGY
+        % Use previously optimized values as initial guess for next point
+        % This exploits continuity in parameter space for faster convergence
         if i > 1
+            % Use previous gamma value (same nu) as initial guess
             x0 = [p_opt(i-1,j), q_opt(i-1,j)];
         elseif j > 1
+            % Use previous nu value (same gamma) as initial guess
             x0 = [p_opt(i,j-1), q_opt(i,j-1)];
         else
+            % First point in grid: use fallback initial guess
             x0 = x_fallback;
         end
-
-        if any(~isfinite(x0)), x0 = x_fallback; end
-
-        objfun = @(x) obj_L2(N, T, dt, J, c, gamma, nu, a, M, x(1), x(2), ky);
+        
+        % Fallback to default if initialization failed
+        if any(~isfinite(x0))
+            x0 = x_fallback;
+        end
+        
+        %% OPTIMIZATION EXECUTION
+        % Define objective function with current parameters
+        objfun = @(x) obj_L2(N, T, dt, J, c, gamma, nu, a, M, x(1), x(2));
+        
+        % Run Nelder-Mead simplex optimization (fminsearch)
         [x_opt, fval] = fminsearch(objfun, x0, optim_options);
-
+        
+        %% ERROR HANDLING FOR FAILED OPTIMIZATIONS
+        % If optimization failed (non-finite results), use fallback values
         if ~isfinite(fval) || any(~isfinite(x_opt))
             x_opt = x_fallback;
-            fval  = objfun(x_opt);
+            fval  = objfun(x_opt);  % Re-evaluate objective at fallback point
         end
-
-        p_opt(i,j)   = x_opt(1);
-        q_opt(i,j)   = x_opt(2);
-        rho_opt(i,j) = fval;
+        
+        %% STORE RESULTS
+        p_opt(i,j)   = x_opt(1);    % Store optimal p
+        q_opt(i,j)   = x_opt(2);    % Store optimal q
+        rho_opt(i,j) = fval;        % Store optimal contraction rate
     end
 end
 
-%% Build 4-sided boundary in (p,q) space (envelope)
+%% BOUNDARY ENVELOPE CONSTRUCTION
+% Extract boundary points from the optimized grid to create envelope polygon
 
-[~, i_gmin] = min(gamma_vals);
-[~, i_gmax] = max(gamma_vals);
-[~, j_nmin] = min(nu_vals);
-[~, j_nmax] = max(nu_vals);
+% Find indices of minimum and maximum gamma/nu values
+[~, i_gmin] = min(gamma_vals);  % Index of smallest gamma
+[~, i_gmax] = max(gamma_vals);  % Index of largest gamma
+[~, j_nmin] = min(nu_vals);     % Index of smallest nu
+[~, j_nmax] = max(nu_vals);     % Index of largest nu
 
-% 4 boundary curves in parameter space mapped to (p,q):
-% gamma = gamma_min, nu from min..max
-P_gmin = p_opt(i_gmin,:);  Q_gmin = q_opt(i_gmin,:);
-% gamma = gamma_max, nu from max..min (reverse to close polygon)
-P_gmax = fliplr(p_opt(i_gmax,:));  Q_gmax = fliplr(q_opt(i_gmax,:));
-% nu = nu_min, gamma from max..min
-P_nmin = p_opt(:,j_nmin);  Q_nmin = q_opt(:,j_nmin);
-P_nmin = flipud(P_nmin);   Q_nmin = flipud(Q_nmin);
-% nu = nu_max, gamma from min..max
-P_nmax = p_opt(:,j_nmax);  Q_nmax = q_opt(:,j_nmax);
+% Extract boundary curves:
+% Bottom edge: fixed gamma_min, varying nu
+P_gmin = p_opt(i_gmin,:);
+Q_gmin = q_opt(i_gmin,:);
 
-% Concatenate in correct order to form closed polygon:
-P_boundary = [P_gmin,  P_nmax',  P_gmax,  P_nmin'];
-Q_boundary = [Q_gmin,  Q_nmax',  Q_gmax,  Q_nmin'];
+% Top edge: fixed gamma_max, varying nu (reversed for proper polygon order)
+P_gmax = fliplr(p_opt(i_gmax,:));
+Q_gmax = fliplr(q_opt(i_gmax,:));
 
-% Use this to define plotting limits (envelope box)
+% Left edge: fixed nu_min, varying gamma (reversed for proper polygon order)
+P_nmin = flipud(p_opt(:,j_nmin));
+Q_nmin = flipud(q_opt(:,j_nmin));
+
+% Right edge: fixed nu_max, varying gamma
+P_nmax = p_opt(:,j_nmax);
+Q_nmax = q_opt(:,j_nmax);
+
+% Concatenate boundary points in clockwise order to form closed polygon
+P_boundary = [p_opt(i_gmin,:), ...      % Bottom edge (left to right)
+              p_opt(:,j_nmax)', ...     % Right edge (bottom to top)
+              fliplr(p_opt(i_gmax,:)), ...  % Top edge (right to left)
+              fliplr(p_opt(:,j_nmin)')];    % Left edge (top to bottom)
+
+Q_boundary = [q_opt(i_gmin,:), ...      % Bottom edge
+              q_opt(:,j_nmax)', ...     % Right edge
+              fliplr(q_opt(i_gmax,:)), ...  % Top edge
+              fliplr(q_opt(:,j_nmin)')];    % Left edge
+
+% Calculate axis limits with padding for better visualization
 p_min = min(P_boundary); p_max = max(P_boundary);
 q_min = min(Q_boundary); q_max = max(Q_boundary);
+px = padding * (p_max - p_min);  % Horizontal padding
+qx = padding * (q_max - q_min);  % Vertical padding
 
-%% Figure 1: envelope and all points (optional) + boundary
+%% VISUALIZATION SETTINGS (POSTER STYLE)
+% Define consistent styling for all figures
+FS_AXIS  = 26;      % Font size for axis tick labels
+FS_LABEL = 28;      % Font size for axis labels
+LW_BOLD  = 4.0;     % Line width for bold lines (boundaries)
+MS_DOTS  = 10;      % Marker size for scatter plot dots
 
-figure('Name','Envelope in (p,q) space','Position',[100 100 800 600]);
+% Fixed layout positions to prevent automatic resizing
+POS_AX  = [0.15, 0.15, 0.64, 0.78];  % Main axis position [left, bottom, width, height]
+POS_CB  = [0.84, 0.15, 0.04, 0.78];  % Colorbar position
+
+%% FIGURE 1: ENVELOPE AND SCATTER PLOT OF OPTIMAL POINTS
+% Shows all optimal (p,q) points with boundary envelope
+figure('Name','Envelope','Position',[100 100 800 700], 'Color', 'w');
+set(gcf, 'PaperPositionMode', 'auto');  % Maintain size when printing
 hold on; box on; grid on;
 
+% Identify valid (finite) data points
 valid = isfinite(p_opt) & isfinite(q_opt);
-scatter(p_opt(valid), q_opt(valid), 10, [0.8 0.8 0.8], 'filled', ...
-        'DisplayName','Optimal (p,q) for all (\gamma,\nu)');
 
-plot(P_boundary, Q_boundary, 'k-', 'LineWidth', 2, 'HandleVisibility', 'off');%, 'DisplayName','Envelope boundary');
+% Scatter plot of all optimal points (gray, semi-transparent)
+scatter(p_opt(valid), q_opt(valid), MS_DOTS, [0.7 0.7 0.7], 'filled', ...
+    'MarkerFaceAlpha', 0.5); 
 
-xlabel('p','FontSize',16);
-ylabel('q','FontSize',16);
-set(gca,'FontSize',16);
-legend('Location','best');
+% Plot boundary envelope as bold black line
+plot(P_boundary, Q_boundary, 'k-', 'LineWidth', LW_BOLD);
 
-% Add padding of 5% of interval
-px = padding * (p_max - p_min);
-qx = padding * (q_max - q_min);
-
+% Labels and formatting
+xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
+ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
+set(gca,'FontSize',FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
 xlim([p_min - px, p_max + px]);
 ylim([q_min - qx, q_max + qx]);
 
-%% Figure 2: isolines for constant nu (γ varying) inside same boundary
+% Apply fixed layout
+set(gca, 'Position', POS_AX);
 
-% Choose nu-levels (logarithmic)
-nu_levels = logspace(-1, 0, 10);
+%% FIGURE 2: ISOLINES AT FIXED NU VALUES
+% Shows curves of optimal (p,q) for constant nu values
+nu_levels = logspace(-1, 0, 10);  % 10 log-spaced nu levels
+
+% Find indices in nu_vals closest to the desired levels
 nu_idx = zeros(size(nu_levels));
 for k = 1:numel(nu_levels)
     [~, nu_idx(k)] = min(abs(nu_vals - nu_levels(k)));
 end
-nu_idx = unique(nu_idx);
+nu_idx = unique(nu_idx);  % Remove duplicates
 
-figure('Name','Isolines: constant \nu in (p,q) space','Position',[150 150 800 600]);
+figure('Name','Isolines: Fixed Nu','Position',[150 150 800 700], 'Color', 'w');
+set(gcf, 'PaperPositionMode', 'auto'); 
 hold on; box on; grid on;
 
-% Draw boundary again for context
-plot(P_boundary, Q_boundary, 'k-', 'LineWidth', 2, 'HandleVisibility', 'off');%, 'DisplayName','Envelope boundary');
+% Plot boundary envelope as reference
+plot(P_boundary, Q_boundary, 'k-', 'LineWidth', LW_BOLD);
 
-% Use a continuous colormap instead of cycling colors
+% Color map for different nu levels
 num_curves = numel(nu_idx);
-colors = parula(num_curves);
+cmap = parula(num_curves); 
+
+% Plot each constant-nu curve
 for k = 1:num_curves
     j = nu_idx(k);
-    p_curve = p_opt(:,j);
-    q_curve = q_opt(:,j);
-    mask = isfinite(p_curve) & isfinite(q_curve);
-    plot(p_curve(mask), q_curve(mask), '-', 'LineWidth', 2, ...
-         'Color', colors(k,:), ...
-         'DisplayName', sprintf('\\nu \\approx %.3f', nu_vals(j)));
+    plot(p_opt(:,j), q_opt(:,j), '-', 'LineWidth', LW_BOLD, 'Color', cmap(k,:));
 end
 
-xlabel('p','FontSize',16);
-ylabel('q','FontSize',16);
-set(gca,'FontSize',16);
-legend('Location','best');
-
-% Add padding of 5% of interval
-px = padding * (p_max - p_min);
-qx = padding * (q_max - q_min);
-
+% Labels and formatting
+xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
+ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
+set(gca,'FontSize',FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
 xlim([p_min - px, p_max + px]);
 ylim([q_min - qx, q_max + qx]);
 
-%% Figure 3: isolines for constant gamma (ν varying) inside same boundary
+% Apply fixed layout
+set(gca, 'Position', POS_AX); 
 
-gamma_levels = logspace(-1, 1, 10);
+% Add colorbar for nu values
+c = colorbar;
+colormap(cmap);
+c.Position = POS_CB;
+
+c.Label.String = '\nu';  % Greek letter nu
+c.Label.FontSize = FS_LABEL;
+c.Label.FontWeight = 'bold';
+c.Label.Rotation = 0; 
+c.Label.Units = 'normalized';
+c.Label.Position = [-0.6, 0.5, 0];  % Position left of colorbar
+c.Label.VerticalAlignment = 'middle';
+caxis([min(nu_levels) max(nu_levels)]);  % Set colorbar limits
+set(gca, 'ColorScale', 'log');  % Use log scaling for color mapping
+
+%% FIGURE 3: ISOLINES AT FIXED GAMMA VALUES
+% Shows curves of optimal (p,q) for constant gamma values
+gamma_levels = logspace(-1, 1, 10);  % 10 log-spaced gamma levels
+
+% Find indices in gamma_vals closest to the desired levels
 gamma_idx = zeros(size(gamma_levels));
 for k = 1:numel(gamma_levels)
     [~, gamma_idx(k)] = min(abs(gamma_vals - gamma_levels(k)));
 end
-gamma_idx = unique(gamma_idx);
+gamma_idx = unique(gamma_idx);  % Remove duplicates
 
-figure('Name','Isolines: constant \gamma in (p,q) space','Position',[200 200 800 600]);
+figure('Name','Isolines: Fixed Gamma','Position',[200 200 800 700], 'Color', 'w');
+set(gcf, 'PaperPositionMode', 'auto');
 hold on; box on; grid on;
 
-% Draw boundary again for context
-plot(P_boundary, Q_boundary, 'k-', 'LineWidth', 2, 'HandleVisibility', 'off');%, 'DisplayName','Envelope boundary');
+% Plot boundary envelope as reference
+plot(P_boundary, Q_boundary, 'k-', 'LineWidth', LW_BOLD);
 
-% Use a continuous colormap instead of cycling colors
+% Color map for different gamma levels
 num_curves = numel(gamma_idx);
-colors = parula(num_curves);
+cmap = parula(num_curves);
+
+% Plot each constant-gamma curve
 for k = 1:num_curves
     i = gamma_idx(k);
-    p_curve = p_opt(i,:);
-    q_curve = q_opt(i,:);
-    mask = isfinite(p_curve) & isfinite(q_curve);
-    plot(p_curve(mask), q_curve(mask), '-', 'LineWidth', 2, ...
-         'Color', colors(k,:), ...
-         'DisplayName', sprintf('\\gamma \\approx %.3f', gamma_vals(i)));
+    plot(p_opt(i,:), q_opt(i,:), '-', 'LineWidth', LW_BOLD, 'Color', cmap(k,:));
 end
 
-xlabel('p','FontSize',16);
-ylabel('q','FontSize',16);
-set(gca,'FontSize',16);
-legend('Location','best');
-
-% Add padding of 5% of interval
-px = padding * (p_max - p_min);
-qx = padding * (q_max - q_min);
-
+% Labels and formatting
+xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
+ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
+set(gca,'FontSize',FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
 xlim([p_min - px, p_max + px]);
 ylim([q_min - qx, q_max + qx]);
 
-%% Figure 4: contour of global contraction factor in (p,q) inside boundary
+% Apply fixed layout
+set(gca, 'Position', POS_AX); 
 
-% Scattered data: (p_opt, q_opt) -> rho_opt
+% Add colorbar for gamma values
+c = colorbar;
+colormap(cmap);
+c.Position = POS_CB;
+
+c.Label.String = '\gamma';  % Greek letter gamma
+c.Label.FontSize = FS_LABEL;
+c.Label.FontWeight = 'bold';
+c.Label.Rotation = 0; 
+c.Label.Units = 'normalized';
+c.Label.Position = [-0.6, 0.5, 0];  % Position left of colorbar
+c.Label.VerticalAlignment = 'middle';
+caxis([min(gamma_levels) max(gamma_levels)]);  % Set colorbar limits
+set(gca, 'ColorScale', 'log');  % Use log scaling for color mapping
+
+%% FIGURE 4: CONTOUR PLOT OF CONTRACTION RATE IN (p,q) SPACE
+% Shows the contraction rate rho as a function of p and q
+
+% Create interpolation function for scattered (p,q,rho) data
 mask_scatt = isfinite(p_opt) & isfinite(q_opt) & isfinite(rho_opt);
-p_scatt = p_opt(mask_scatt);
-q_scatt = q_opt(mask_scatt);
-rho_scatt = rho_opt(mask_scatt);
+F_rho = scatteredInterpolant(p_opt(mask_scatt), q_opt(mask_scatt), ...
+                             rho_opt(mask_scatt), 'natural', 'none');
 
-% Interpolant over (p,q)
-F_rho = scatteredInterpolant(p_scatt, q_scatt, rho_scatt, ...
-                             'natural', 'none');
-
-% Regular grid in (p,q) over the envelope box
-Np = 200;
-Nq = 200;
+% Create fine grid for interpolation
+Np = 200; Nq = 200;
 [Pgrid, Qgrid] = meshgrid(linspace(p_min, p_max, Np), ...
                           linspace(q_min, q_max, Nq));
 
+% Interpolate rho values on the grid
 Rgrid = F_rho(Pgrid, Qgrid);
 
-% Mask outside the polygon boundary
+% Mask values outside the boundary envelope
 [in_poly, on_poly] = inpolygon(Pgrid, Qgrid, P_boundary, Q_boundary);
-inside = in_poly | on_poly;
-Rgrid(~inside) = NaN;
+Rgrid(~(in_poly | on_poly)) = NaN;  % Set outside values to NaN
 
-figure('Name','Contraction factor in (p,q) space','Position',[250 250 800 600]);
+% Create contour plot
+figure('Name','Contraction p-q','Position',[250 250 800 600], 'Color', 'w');
+set(gcf, 'PaperPositionMode', 'auto');
 hold on; box on; grid on;
 
-% Contour plot of the global contraction factor
+% Plot filled contours (20 levels)
 contourf(Pgrid, Qgrid, Rgrid, 20, 'LineStyle','none');
-colormap(parula);
-colorbar;
 
-% Draw boundary
-plot(P_boundary, Q_boundary, 'k-', 'LineWidth', 2, 'HandleVisibility', 'off');
+% Overlay boundary envelope
+plot(P_boundary, Q_boundary, 'k-', 'LineWidth', LW_BOLD);
 
-xlabel('p','FontSize',16);
-ylabel('q','FontSize',16);
-set(gca,'FontSize',16);
-% Add padding of 5% of interval
-px = padding * (p_max - p_min);
-qx = padding * (q_max - q_min);
-
+% Labels and formatting
+xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
+ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
+set(gca,'FontSize',FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
 xlim([p_min - px, p_max + px]);
 ylim([q_min - qx, q_max + qx]);
 
-%% Figure 5: global contraction factor rho(gamma,nu) in parameter space
+% Apply fixed layout
+set(gca, 'Position', POS_AX);
 
-figure('Name','Contraction factor in (\gamma,\nu) space','Position',[300 300 800 600]);
+% Add colorbar for contraction rate rho
+c = colorbar;
+colormap(parula);
+c.Position = POS_CB;
+
+c.Label.String = '\rho';  % Greek letter rho (contraction rate)
+c.Label.FontSize = FS_LABEL;
+c.Label.FontWeight = 'bold';
+c.Label.Rotation = 0; 
+c.Label.Units = 'normalized';
+c.Label.Position = [-1.2, 0.5, 0];  % Position left of colorbar
+c.Label.VerticalAlignment = 'middle';
+
+%% FIGURE 5: CONTRACTION RATE IN ORIGINAL (gamma,nu) PARAMETER SPACE
+% Shows how contraction rate varies with the original parameters
+figure('Name','Contraction gamma-nu','Position',[300 300 800 600], 'Color', 'w');
+set(gcf, 'PaperPositionMode', 'auto');
 hold on; box on; grid on;
 
-% We already have rho_opt(i,j) defined on the grid:
-%   gamma_vals(i), nu_vals(j)
-
-% Create grids for plotting
+% Create meshgrid for contour plot
 [GammaGrid, NuGrid] = meshgrid(gamma_vals, nu_vals);
 
-% Note: rho_opt(i,j) needs to be transposed because meshgrid produces
-%       GammaGrid(j,i), NuGrid(j,i)
-R = rho_opt';   
+% Plot filled contours (30 levels)
+contourf(GammaGrid, NuGrid, rho_opt', 30, 'LineStyle', 'none');
 
-% Option A: contour plot (recommended)
-contourf(GammaGrid, NuGrid, R, 30, 'LineStyle', 'none');
+% Labels and formatting
+xlabel('\gamma', 'FontSize', FS_LABEL, 'FontWeight', 'bold');
+ylabel('\nu',    'FontSize', FS_LABEL, 'FontWeight', 'bold');
+set(gca, 'FontSize', FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
+set(gca, 'XScale', 'log', 'YScale', 'log');  % Log-log scale
+
+% Apply fixed layout
+set(gca, 'Position', POS_AX);
+
+% Add colorbar for contraction rate rho
+c = colorbar;
 colormap(parula);
-colorbar;
+c.Position = POS_CB;
 
-set(gca, 'XScale', 'log', 'YScale', 'log');   % Log scale for both axes
-xlabel('\gamma', 'FontSize', 16);
-ylabel('\nu',    'FontSize', 16);
-% title('Global contraction factor \rho(\gamma,\nu)', 'FontSize', 16);
-set(gca, 'FontSize', 16);
+c.Label.String = '\rho';  % Greek letter rho (contraction rate)
+c.Label.FontSize = FS_LABEL;
+c.Label.FontWeight = 'bold';
+c.Label.Rotation = 0; 
+c.Label.Units = 'normalized';
+c.Label.Position = [-1.2, 0.5, 0];  % Position left of colorbar
+c.Label.VerticalAlignment = 'middle';

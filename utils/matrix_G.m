@@ -1,4 +1,4 @@
-function G = matrix_G(N, s, theta1, theta2, c, gamma, nu, a, b, ky)
+function G = matrix_G(N, s, theta1, theta2, c, gamma, nu, a, b)
 % COMPUTE_TRANSFER_MATRIX Compute the transfer matrix G for given parameters
 % red black SWR algorithm for N subdomains of length b = a+M and overlap M
 %
@@ -12,7 +12,6 @@ function G = matrix_G(N, s, theta1, theta2, c, gamma, nu, a, b, ky)
 %   nu      - Second damping coefficient
 %   a       - Length of the first portion of a subdomain
 %   b       - Total length of a subdomain
-%   ky      - y-component of wave number
 %
 % Output:
 %   G       - Transfer matrix (2N x 2N)
@@ -27,7 +26,7 @@ bj = @(j) aj(j+1) + M;
 Lx = bj(N);
 
 % Calculate kx
-kx = -1i * sqrt((s.^2+gamma.*s) ./ (c^2+nu.*s) + ky^2);
+kx = -1i * sqrt((s.^2+gamma.*s) ./ (c^2+nu.*s));
 
 interface_term = s * theta1 + theta2;
 

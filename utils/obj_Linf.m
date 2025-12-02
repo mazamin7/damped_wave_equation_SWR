@@ -1,4 +1,4 @@
-function val = obj_Linf(N, T, dt, J, c, gamma, nu, a, M, theta1, theta2, ky)
+function val = obj_Linf(N, T, dt, J, c, gamma, nu, a, M, theta1, theta2)
     % L∞ objective function with explicit parameters
     b = a + M;
     
@@ -11,7 +11,7 @@ function val = obj_Linf(N, T, dt, J, c, gamma, nu, a, M, theta1, theta2, ky)
     % Compute contraction factors
     r_vals = zeros(size(s_vals));
     for idx = 1:length(s_vals)
-        r_vals(idx) = rho(N, s_vals(idx), theta1, theta2, c, gamma, nu, a, b, ky);
+        r_vals(idx) = rho(N, s_vals(idx), theta1, theta2, c, gamma, nu, a, b);
     end
     
     % L∞ norm (maximum over frequency band)

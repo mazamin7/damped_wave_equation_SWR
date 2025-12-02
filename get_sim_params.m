@@ -1,4 +1,4 @@
-function P = get_sim_params_1D()
+function P = get_sim_params()
     % Global simulation parameters for the 1D SWR project
 
     % Domain / geometry / decomposition

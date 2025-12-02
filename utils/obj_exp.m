@@ -6,13 +6,6 @@ function val = obj_exp(x, u0, v0, N, a, M, T, c, dh, dt, gamma, nu, k_optim, u_i
 
     fprintf(1, '   [Eval] p = %10.6f,  q = %10.6f ... \n', p, q);
 
-    % Basic constraint check
-    if p < 0 
-       val = 1e10; 
-       fprintf(1, 'Skipped (p<0)\n'); 
-       return;
-    end
-
     try
         % --- STEP 1: Compute Amplification Factor (F) ---
         
@@ -20,7 +13,7 @@ function val = obj_exp(x, u0, v0, N, a, M, T, c, dh, dt, gamma, nu, k_optim, u_i
         err0 = max(abs(u_init(:) - u_ref(:))) / max(abs(u_ref(:)));
         
         % Run 1 iteration to get E1
-        [~, ~, res_test] = run_swr_1D(u0, v0, N, a, M, T, c, dh, dt, ...
+        [~, ~, res_test] = run_swr(u0, v0, N, a, M, T, c, dh, dt, ...
                                       gamma, nu, p, q, 1, u_init, u_ref);
         E1 = res_test(1);
         
@@ -28,13 +21,15 @@ function val = obj_exp(x, u0, v0, N, a, M, T, c, dh, dt, gamma, nu, k_optim, u_i
         F = E1 / err0;
         
         % Safety check to avoid division by zero
-        if F == 0, F = 1; end
+        if F == 0
+            F = 1;
+        end
         
         % --- STEP 2: Run Real Simulation with Scaled Input ---
         
         u_init_scaled = u_init / F;
         
-        [~, ~, res_hist] = run_swr_1D(u0, v0, N, a, M, T, c, dh, dt, ...
+        [~, ~, res_hist] = run_swr(u0, v0, N, a, M, T, c, dh, dt, ...
                                       gamma, nu, p, q, k_optim, u_init_scaled, u_ref);
         
         % The objective value is the error at the last iteration

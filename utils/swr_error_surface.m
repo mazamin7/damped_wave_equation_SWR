@@ -1,5 +1,5 @@
-function res_surface = swr_error_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k, THETA1, THETA2, u0, v0, u_init, u_ref)
-    % SWR_ERROR_SURFACE_1D - Parameter sweep over theta1, theta2
+function res_surface = swr_error_surface(N, a, M, T, c, dh, dt, gamma, nu, k, THETA1, THETA2, u0, v0, u_init, u_ref)
+    % SWR_ERROR_SURFACE - Parameter sweep over theta1, theta2
     % Input: 
     %   Standard params (N...k)
     %   THETA1, THETA2 : Grids of parameters
@@ -40,7 +40,7 @@ function res_surface = swr_error_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k,
             % ------------------------------------------------------------
             % TEST RUN: 1 SWR iteration to get amplification factor F
             % ------------------------------------------------------------
-            [~, ~, res_history_test] = run_swr_1D( ...
+            [~, ~, res_history_test] = run_swr( ...
                 u0, v0, N, a, M, T, c, dh, dt, gamma, nu, ...
                 theta1, theta2, k_test, u_init, u_ref);
             
@@ -60,7 +60,7 @@ function res_surface = swr_error_surface_1D(N, a, M, T, c, dh, dt, gamma, nu, k,
             % ------------------------------------------------------------
             u_init_scaled = u_init / F;
             
-            [~, final_res, ~] = run_swr_1D( ...
+            [~, final_res, ~] = run_swr( ...
                 u0, v0, N, a, M, T, c, dh, dt, gamma, nu, ...
                 theta1, theta2, k, u_init_scaled, u_ref);
             

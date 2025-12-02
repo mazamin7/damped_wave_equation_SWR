@@ -4,7 +4,7 @@ addpath("utils\")
 fprintf('Scanning nu values for final relative Linf error (gamma = 0).\n');
 
 %% Domain and numerics
-P = get_sim_params_1D();
+P = get_sim_params();
 
 N  = P.N; % ignore
 a  = P.a; % ignore
@@ -42,7 +42,7 @@ for inu = 1:Nnu
     fprintf('nu = %.2f\n', nu);
 
     %% FDTD simulation
-    u_fdtd = run_fdtd_1D(@(x) A0*sin(k0*x), ...
+    u_fdtd = run_fdtd(@(x) A0*sin(k0*x), ...
                          @(x) v0amp*sin(k0*x), ...
                          Lx, T, c, dh, dt, gamma, nu);
 

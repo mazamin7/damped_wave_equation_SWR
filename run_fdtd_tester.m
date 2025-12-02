@@ -1,11 +1,11 @@
-% FDTD_vs_ANALYTIC_1MODE_1D — single mode, Dirichlet, damping consistent with u_tt+gamma u_t = c^2 u_xx + nu u_txx
+% FDTD_vs_ANALYTIC_1MODE — single mode, Dirichlet, damping consistent with u_tt+gamma u_t = c^2 u_xx + nu u_txx
 clear all; close all; clc;
 addpath("utils\")
 
 fprintf('FDTD vs analytical, single mode, Dirichlet BCs.\n');
 
 %% Domain and numerics
-P = get_sim_params_1D();
+P = get_sim_params();
 
 N  = P.N; % ignore
 a  = P.a; % ignore
@@ -47,7 +47,7 @@ sgtitle('Initial conditions (single sine mode)');
 
 %% FDTD solution (util enforces Dirichlet and damping terms)
 fprintf('Running FDTD...\n');
-u_fdtd = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu);
+u_fdtd = run_fdtd(u0, v0, Lx, T, c, dh, dt, gamma, nu);
 
 Nx = size(u_fdtd,1);
 Nt = size(u_fdtd,2);

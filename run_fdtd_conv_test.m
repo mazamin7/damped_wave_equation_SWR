@@ -3,7 +3,7 @@ clearvars; close all; clc;
 addpath("utils\")
 
 % Simulation parameters
-P = get_sim_params_1D();
+P = get_sim_params();
 
 N  = P.N; % ignore
 a  = P.a; % ignore
@@ -15,7 +15,9 @@ T  = P.T;
 
 c  = P.c;
 gamma = P.gamma;
+gamma = 1;
 nu = P.nu;
+nu = 0.5;
 
 dh = P.dh;
 dt = P.dt;
@@ -50,7 +52,7 @@ for ic = 1:num_cases
             ic, dx, dx, dt, CFL, Nx, Nt);
 
     % --- numerical solution on snapped grid ---
-    u_fdtd = run_fdtd_1D(u0_fun, v0_fun, Lx, T, c, dx, dt, gamma, nu);
+    u_fdtd = run_fdtd(u0_fun, v0_fun, Lx, T, c, dx, dt, gamma, nu);
     % grid that matches u_fdtd
     x = linspace(0,Lx,size(u_fdtd,1)).';
     t = linspace(0,T,size(u_fdtd,2));
