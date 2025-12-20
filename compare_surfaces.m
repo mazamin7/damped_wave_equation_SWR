@@ -25,25 +25,25 @@ dt = P.dt;
 J  = P.J;
 
 %%
-% Viscous damping case
+% % Viscous damping case
 % gamma = 4;
-% gamma = 8;
-gamma = 10;
-% gamma = 12;
-nu = 0;
-% k = 10;
-k = 5*N;
-% k = 40;
-
-% % Viscoelastic damping case
-% gamma = 0;
-% % nu = 0.001;
-% % nu = 0.01;
-% nu = 0.05;
-% % nu = 0.1;
+% % gamma = 8;
+% % gamma = 10;
+% % gamma = 12;
+% nu = 0;
 % % k = 10;
 % k = 5*N;
-% % k = 20;
+% % k = 40;
+
+% Viscoelastic damping case
+gamma = 0;
+% nu = 0.001;
+% nu = 0.01;
+nu = 0.05;
+% nu = 0.1;
+% k = 10;
+k = 5*N;
+% k = 20;
 
 % Parameter ranges
 theta1_range = linspace(0, 2, 13);
@@ -150,7 +150,7 @@ theta2_range_plot = THETA2(:, 1)';
 
 figure('Name', 'SWR Error Surface', 'Color', 'w');
 % Set figure size suitable for posters
-set(gcf, 'Position', [100 100 800 700]); 
+set(gcf, 'Position', [100 100 800 600]); 
 
 contourf(theta1_range_plot, theta2_range_plot, log10(error_surface), 50, ...
          'LineStyle', 'none', 'HandleVisibility', 'off');
@@ -180,8 +180,8 @@ xlabel('p', 'FontSize', FS_LABEL, 'FontWeight', 'bold');
 ylabel('q', 'FontSize', FS_LABEL, 'FontWeight', 'bold');
 
 % Legend
-lgd = legend('show', 'Location', 'NorthEast');
-set(lgd, 'FontSize', 22, 'FontWeight', 'bold'); % Slightly smaller than axis labels
+% lgd = legend('show', 'Location', 'NorthEast');
+% set(lgd, 'FontSize', 22, 'FontWeight', 'bold'); % Slightly smaller than axis labels
 
 % Colorbar
 colormap('parula');
@@ -199,6 +199,29 @@ end
 
 % Set Axis properties
 set(gca, 'FontSize', FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
+
+%% Create separate figure for the Horizontal Legend ONLY
+fig_lgd = figure('Name', 'Horizontal Legend', 'Color', 'w');
+set(gcf, 'Position', [100 100 1400 100]); % Wider window for more space
+
+hold on;
+% Use \quad or \hspace{1cm} for explicit horizontal spacing in LaTeX
+plot(nan, nan, 'ks', 'MarkerSize', MS_MARK, 'MarkerFaceColor', 'k', 'LineWidth', 2, ...
+    'DisplayName', 'Initial guess \hspace{0.5cm}'); 
+plot(nan, nan, 's', 'MarkerSize', MS_MARK, 'Color', "k", 'LineWidth', 2, ...
+    'MarkerFaceColor', "w", ...
+    'DisplayName', 'SWR error opt. \hspace{0.5cm}');
+plot(nan, nan, 'mo', 'MarkerSize', MS_MARK, 'MarkerFaceColor', 'm', 'LineWidth', 2, ...
+    'DisplayName', 'Spectral opt. $L_2$ \hspace{0.5cm}');
+plot(nan, nan, 'g^', 'MarkerSize', MS_MARK, 'MarkerFaceColor', 'g', 'LineWidth', 2, ...
+    'DisplayName', 'Spectral opt. $L_\infty$');
+
+% Configure the legend
+lgd_h = legend('show', 'Orientation', 'horizontal', 'Location', 'north');
+set(lgd_h, 'FontSize', 22, 'FontWeight', 'bold', 'Interpreter', 'latex');
+
+legend('boxoff');
+axis off;
 
 %% Display summary
 fprintf('\n=== RESULTS SUMMARY ===\n');

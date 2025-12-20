@@ -165,7 +165,7 @@ end
 %           + horizontal line = FDTD vs GT final-time error
 % ============================================================
 figure('Name', 'Gamma Convergence', 'Color', 'w'); clf;
-set(gcf, 'Position', [100 100 600 450]); % Standard size
+set(gcf, 'Position', [100 100 900 600]); % Standard size
 gamma_idx = find([cases.nu] == 0);
 
 h_curves = gobjects(numel(gamma_idx),1);
@@ -189,8 +189,8 @@ for j = 1:numel(gamma_idx)
              'HandleVisibility','off');
 end
 
-% xlabel('Iteration','FontSize',FS_LABEL, 'FontWeight', 'bold');
-% ylabel('Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
+xlabel('Iteration','FontSize',FS_LABEL, 'FontWeight', 'bold');
+ylabel('Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
 grid on; 
 set(gca,'FontSize',FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
 
@@ -210,7 +210,7 @@ set(lgd, 'FontSize', FS_AXIS);
 %           + horizontal line = FDTD vs GT final-time error
 % ============================================================
 figure('Name', 'Nu Convergence', 'Color', 'w'); clf;
-set(gcf, 'Position', [150 150 600 450]); 
+set(gcf, 'Position', [150 150 900 600]); 
 nu_idx = find([cases.gamma] == 0);
 
 h_curves_nu = gobjects(numel(nu_idx),1);
@@ -234,8 +234,8 @@ for j = 1:numel(nu_idx)
              'HandleVisibility','off');
 end
 
-% xlabel('Iteration','FontSize',FS_LABEL, 'FontWeight', 'bold');
-% ylabel('Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
+xlabel('Iteration','FontSize',FS_LABEL, 'FontWeight', 'bold');
+ylabel('Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
 grid on; 
 set(gca,'FontSize',FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
 
