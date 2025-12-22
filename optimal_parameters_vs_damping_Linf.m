@@ -26,8 +26,8 @@ padding = 0.05;    % Padding for plot axis limits (5% extra space)
 
 %% FINE GRID DEFINITION FOR PARAMETER SPACE EXPLORATION
 % Create logarithmic grids for gamma and nu parameters
-Ng = 81;        % Number of grid points for gamma (reduced to 6 for testing)
-Nn = 81;        % Number of grid points for nu (reduced to 6 for testing)
+Ng = 81;        % Number of grid points for gamma
+Nn = 81;        % Number of grid points for nu
 
 % Log-spaced parameter ranges:
 % gamma from 10^(-1) to 10^1 = [0.1, 10]
@@ -310,7 +310,7 @@ Rgrid = F_rho(Pgrid, Qgrid);
 Rgrid(~(in_poly | on_poly)) = NaN;  % Set outside values to NaN
 
 % Create contour plot
-figure('Name','Contraction p-q','Position',[250 250 800 600], 'Color', 'w');
+figure('Name','Contraction p-q','Position',[250 250 900 750], 'Color', 'w');
 set(gcf, 'PaperPositionMode', 'auto');
 hold on; box on; grid on;
 
@@ -335,17 +335,18 @@ c = colorbar;
 colormap(parula);
 c.Position = POS_CB;
 
-c.Label.String = '\rho';  % Greek letter rho (contraction rate)
+c.Label.String = '$\hat{\rho}$';  % Greek letter rho (contraction rate)
+c.Label.Interpreter = 'latex';
 c.Label.FontSize = FS_LABEL;
 c.Label.FontWeight = 'bold';
 c.Label.Rotation = 0; 
 c.Label.Units = 'normalized';
-c.Label.Position = [-1.2, 0.5, 0];  % Position left of colorbar
+c.Label.Position = [-0.6, 0.5, 0];  % Position left of colorbar
 c.Label.VerticalAlignment = 'middle';
 
 %% FIGURE 5: CONTRACTION RATE IN ORIGINAL (gamma,nu) PARAMETER SPACE
 % Shows how contraction rate varies with the original parameters
-figure('Name','Contraction gamma-nu','Position',[300 300 800 600], 'Color', 'w');
+figure('Name','Contraction gamma-nu','Position',[300 300 900 750], 'Color', 'w');
 set(gcf, 'PaperPositionMode', 'auto');
 hold on; box on; grid on;
 
@@ -369,10 +370,11 @@ c = colorbar;
 colormap(parula);
 c.Position = POS_CB;
 
-c.Label.String = '\rho';  % Greek letter rho (contraction rate)
+c.Label.String = '$\hat{\rho}$';  % Greek letter rho (contraction rate)
+c.Label.Interpreter = 'latex';
 c.Label.FontSize = FS_LABEL;
 c.Label.FontWeight = 'bold';
 c.Label.Rotation = 0; 
 c.Label.Units = 'normalized';
-c.Label.Position = [-1.2, 0.5, 0];  % Position left of colorbar
+c.Label.Position = [-0.6, 0.5, 0];  % Position left of colorbar
 c.Label.VerticalAlignment = 'middle';
