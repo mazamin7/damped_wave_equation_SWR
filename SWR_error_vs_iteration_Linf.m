@@ -189,8 +189,8 @@ for j = 1:numel(gamma_idx)
              'HandleVisibility','off');
 end
 
-xlabel('Iteration','FontSize',FS_LABEL, 'FontWeight', 'bold');
-ylabel('Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
+xlabel('Iteration Index k','FontSize',FS_LABEL, 'FontWeight', 'bold');
+ylabel('SWR Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
 grid on; 
 set(gca,'FontSize',FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
 
@@ -234,8 +234,8 @@ for j = 1:numel(nu_idx)
              'HandleVisibility','off');
 end
 
-xlabel('Iteration','FontSize',FS_LABEL, 'FontWeight', 'bold');
-ylabel('Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
+xlabel('Iteration Index k','FontSize',FS_LABEL, 'FontWeight', 'bold');
+ylabel('SWR Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
 grid on; 
 set(gca,'FontSize',FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
 
