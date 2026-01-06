@@ -28,6 +28,8 @@ padding = 0.05;    % Padding for plot axis limits (5% extra space)
 % Create logarithmic grids for gamma and nu parameters
 Ng = 81;        % Number of grid points for gamma
 Nn = 81;        % Number of grid points for nu
+Ng = 9;        % Number of grid points for gamma
+Nn = 9;        % Number of grid points for nu
 
 % Log-spaced parameter ranges:
 % gamma from 10^(-1) to 10^1 = [0.1, 10]
@@ -177,8 +179,8 @@ plot(P_boundary, Q_boundary, 'k-', 'LineWidth', LW_BOLD);
 xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
 ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
 set(gca,'FontSize',FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
-xlim([p_min - px, p_max + px]);
-ylim([q_min - qx, q_max + qx]);
+% xlim([p_min - px, p_max + px]);
+% ylim([q_min - qx, q_max + qx]);
 
 % Apply fixed layout
 set(gca, 'Position', POS_AX);
@@ -215,8 +217,8 @@ end
 xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
 ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
 set(gca,'FontSize',FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
-xlim([p_min - px, p_max + px]);
-ylim([q_min - qx, q_max + qx]);
+% xlim([p_min - px, p_max + px]);
+% ylim([q_min - qx, q_max + qx]);
 
 % Apply fixed layout
 set(gca, 'Position', POS_AX); 
@@ -268,8 +270,8 @@ end
 xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
 ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
 set(gca,'FontSize',FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
-xlim([p_min - px, p_max + px]);
-ylim([q_min - qx, q_max + qx]);
+% xlim([p_min - px, p_max + px]);
+% ylim([q_min - qx, q_max + qx]);
 
 % Apply fixed layout
 set(gca, 'Position', POS_AX); 
@@ -324,8 +326,8 @@ plot(P_boundary, Q_boundary, 'k-', 'LineWidth', LW_BOLD);
 xlabel('p','FontSize',FS_LABEL, 'FontWeight', 'bold');
 ylabel('q','FontSize',FS_LABEL, 'FontWeight', 'bold');
 set(gca,'FontSize',FS_AXIS, 'LineWidth', 2, 'FontWeight', 'bold');
-xlim([p_min - px, p_max + px]);
-ylim([q_min - qx, q_max + qx]);
+% xlim([p_min - px, p_max + px]);
+% ylim([q_min - qx, q_max + qx]);
 
 % Apply fixed layout
 set(gca, 'Position', POS_AX);
