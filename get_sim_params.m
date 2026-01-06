@@ -4,7 +4,7 @@ function P = get_sim_params()
     % Domain / geometry / decomposition
     P.N  = 2;
     P.a  = 0.3;
-    P.M  = 0.1;
+    P.M  = 0;
     P.b  = P.a + P.M;
 	P.Lx = P.N * P.a + P.M;
 	P.T  = 5.0;
