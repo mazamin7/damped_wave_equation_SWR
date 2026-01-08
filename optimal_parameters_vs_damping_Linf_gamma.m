@@ -119,8 +119,8 @@ p_approx_curve = (1/c) + (gamma_vals.^2) / (16 * c * w_min^2);
 % 4. Compute Rho Approximation (Contraction Rate)
 % Formula: rho ~ 1 / (32 * w_min^2) (Linear improvement with damping)
 % Note: This is valid for small gamma. For large gamma, it saturates.
-% rho_approx_curve = 0*gamma_vals + 1 / (32 * w_min^2);
-rho_approx_curve = gamma_vals.^2 .* sqrt(9 * gamma_vals.^2 + 4 * w_min^2) / (64 * w_min^3);
+rho_approx_curve = gamma_vals.^2 / (32 * w_min^2);
+% rho_approx_curve = gamma_vals.^2 .* sqrt(9 * gamma_vals.^2 + 4 * w_min^2) / (64 * w_min^3);
 
 
 % Determine axis limits dynamically based on NUMERICAL data range

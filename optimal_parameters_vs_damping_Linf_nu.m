@@ -26,7 +26,7 @@ Ng = 1;         % Gamma is fixed
 Nn = 100;       % High resolution for nu to make the color gradient smooth
 % Parameter ranges:
 gamma_vals = 0;                     % Fixed Gamma = 0
-nu_vals    = logspace(-5, -2, Nn);   % Vary Nu from 1e-5 to 1e-2
+nu_vals    = logspace(-5, -3, Nn);   % Vary Nu from 1e-5 to 1e-2
 
 % Preallocate arrays to store optimization results
 p_opt   = zeros(Ng, Nn);   % Optimal p values
@@ -117,7 +117,6 @@ q_approx_curve = 0.5 * (nu_vals / c^3) * (w_min * w_max);
 % 3. Compute p Approximation (Minimax Phase Correction)
 % Formula: p ~ 1/c - 0.25 * nu^2 * w_max^2 / c^5
 p_approx_curve = (1/c) - 0.25 * (nu_vals.^2 / c^5) * w_max^2;
-% p_approx_curve = (1/c) - 0.2369 * (nu_vals.^2 / c^5) * w_max^2 + 0.1502 * (nu_vals * w_max).^4 / c^9;
 
 % 4. Compute Rho Approximation (Contraction Rate)
 % Formula: rho ~ 0.25 * nu * (w_max - w_min) / c^2
