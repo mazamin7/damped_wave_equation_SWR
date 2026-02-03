@@ -1,4 +1,4 @@
-function u = run_fdtd_1D(u0, v0, Lx, T, c, dh, dt, gamma, nu)
+function u = run_fdtd(u0, v0, Lx, T, c, dh, dt, gamma, nu)
     % --- grid-exact assertion for dh, dt ---
     Nx = round(Lx / dh) + 1;
     Nt = round(T  / dt) + 1;

@@ -8,44 +8,43 @@ FS_TITLE = 28;  % Font size for titles
 LW_BOLD  = 4.0; % Line width for curves
 MS_MARK  = 12;  % Marker size for trajectory points
 LW_AXIS  = 2.0; % Line width for the axis box
-
-% --- UPDATED LAYOUT: Standard Full Plot ---
-% We no longer need to reserve 29% space on the right.
-% Left=0.15, Bottom=0.15, Width=0.80, Height=0.80 (Approximation of standard)
 POS_AX_STD = [0.15, 0.15, 0.80, 0.78]; 
 
 % Simulation parameters
 P = get_sim_params();
-
 N  = P.N;
 a  = P.a;
 M  = P.M;
 b  = P.b;
 Lx = P.Lx;
-T  = P.T;
-
 c  = P.c;
-gamma = P.gamma; % ignore
-nu = P.nu; % ignore
+
+% Infinite Domain approx via Time constraint
+dist_to_bound = (1/3) * Lx;
+T = 0.9 * (dist_to_bound / c); 
 
 dh = P.dh;
 dt = P.dt;
 J  = P.J;
 
-%%
+% Frequency Band for Asymptotic Analysis
+omega_min = pi / T;
+omega_max = pi / dt;
+
+fprintf('Frequency Band: w_min = %.2f, w_max = %.2e\n', omega_min, omega_max);
+
+%% Grid Setup
 Nx = round(Lx/dh) + 1;
 Nt = round(T/dt) + 1;
 x_grid = linspace(0,Lx,Nx);
 t_grid = linspace(0,T,Nt);
 
-% --- Modal initial condition
-m_mode  = 1;
-k0      = m_mode*pi/Lx;
-A0      = 1.0;      % Initial displacement amplitude
-v0amp   = 0.0;      % Initial velocity amplitude
-
-u0  = @(x) A0 * sin(k0*x);
-v0  = @(x) v0amp * sin(k0*x);
+% Initial Condition (Gaussian)
+A0    = 1.0;
+x_c   = (2/3) * Lx;       
+sigma = Lx / 40;          
+u0 = @(x) A0 * exp( - (x - x_c).^2 ./ (2*sigma^2) );
+v0 = @(x) zeros(size(x)); 
 
 % --- 8 CASES
 cases = [
@@ -58,262 +57,264 @@ cases = [
     struct('gamma',0   ,'nu',0.05)
     struct('gamma',0   ,'nu',0.1)
 ];
-
 nCases = numel(cases);
 
 % Storage
-res_hist        = cell(nCases,1);
-final_errors    = zeros(nCases,1);
-opt_params      = zeros(nCases,2);
-opt_obj_vals    = zeros(nCases,1);
-ref_gt_errors   = zeros(nCases,1);   % FDTD vs GT (final time) error
+res_hist_num    = cell(nCases,1); % Numerical Opt history
+res_hist_asy    = cell(nCases,1); % Asymptotic Formula history
+opt_params_num  = zeros(nCases,2);
+opt_params_asy  = zeros(nCases,2);
+ref_gt_errors   = zeros(nCases,1); % Reference Error (approx)
 
-x0 = [1.0/c, 0];     % Initial guess (p,q)
-
+x0 = [1.0/c, 0];     % Initial guess for numerical optimizer
 global PQ_history
 PQ_history = cell(nCases,1);
-
-base_options = optimset('Display','off','TolX',1e-8,'TolFun',1e-8);
+base_options = optimset('Display','off','TolX',1e-12,'TolFun',1e-12);
 
 % Random initial guess for SWR (shared across cases)
 u_init = rand(Nx,Nt);
 
-% ============================================================
+%% ============================================================
 % MAIN LOOP
 % ============================================================
 for s = 1:nCases
-
     gamma = cases(s).gamma;
     nu    = cases(s).nu;
     label_s = sprintf('\\gamma=%.3g, \\nu=%.3g', gamma, nu);
-
     fprintf('\nCase %d: %s\n', s, label_s);
 
-    % Ground-truth analytical solution
-    u_gt = analytic_solution_single_mode(x_grid, t_grid, c, gamma, nu, ...
-                                         k0, A0, v0amp);
-
-    % FDTD reference solution (as in original code)
+    % 1. Reference Solution (FDTD)
     u_ref = run_fdtd(u0, v0, Lx, T, c, dh, dt, gamma, nu);
+    
+    % 2. Asymptotic Formula p,q
+    [p_asy, q_asy, regime_name] = get_formula_pq(gamma, nu, c, omega_min, omega_max);
+    opt_params_asy(s,:) = [p_asy, q_asy];
+    fprintf('  Formula [%s]: p=%.4f, q=%.4f\n', regime_name, p_asy, q_asy);
 
-    % Final-time relative error between FDTD and GT (L-infinity in space)
-    ref_gt_errors(s) = max(abs(u_ref(:,end) - u_gt(:,end))) / max(abs(u_gt(:,end)));
-
-    % Objective (assumed to use gamma, nu, etc., as in your current obj_Linf)
+    % 3. Numerical Optimization p,q
     objfun = @(x) obj_Linf(N,T,dt,J,c,gamma,nu,a,M,x(1),x(2));
-
-    % Save trajectory
     outfun = @(x,optimvalues,state) store_trajectory(x,optimvalues,state,s);
     optim_options = optimset(base_options,'OutputFcn',outfun);
+    
+    [x_opt, fval] = fminsearch(objfun, x0, optim_options);
+    p_num = x_opt(1);
+    q_num = x_opt(2);
+    opt_params_num(s,:) = x_opt;
+    fprintf('  Numeric [Nelder]: p=%.4f, q=%.4f, obj=%.3e\n', p_num, q_num, fval);
 
-    % Optimize p,q
-    [x_opt,fval] = fminsearch(objfun, x0, optim_options);
-    p_opt = x_opt(1);
-    q_opt = x_opt(2);
+    % 4. SWR Runs
+    % Number of iterations
+    if s < 5, k_iter = 60; else, k_iter = 30; end
+    
+    % --- A. Numerical Best Run ---
+    % Test run for scaling
+    [~, ~, hist_test_num] = run_swr(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_num, q_num, 1, u_init, u_ref);
+    err0_num = max(abs(u_init(:) - u_ref(:))) / max(abs(u_ref(:)));
+    F_num = hist_test_num(1) / err0_num;
+    
+    % Real run
+    [~, ~, hist_num] = run_swr(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_num, q_num, k_iter, u_init/F_num, u_ref);
+    res_hist_num{s} = [err0_num; hist_num(:)];
 
-    opt_params(s,:) = x_opt;
-    opt_obj_vals(s) = fval;
-
-    fprintf('  optimized p,q = (%.6f, %.6f), obj = %.3e\n', p_opt, q_opt, fval);
-
-    % Number of SWR iterations for the "real" run
-    if s < 5
-        k = 60;
-    else
-        k = 30;
-    end
-
-    % ========================================================
-    % TEST RUN: 1 SWR iteration to get amplification factor F
-    % ========================================================
-    k_test = 1;
-
-    % Test run starting from common random u_init
-    [~, ~, res_history_test] = run_swr( ...
-        u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_opt, q_opt, ...
-        k_test, u_init, u_ref);
-
-    % Error at iteration 0 for the test run
-    err0_test = max(abs(u_init(:) - u_ref(:))) / max(abs(u_ref(:)));
-
-    % Error after first SWR iteration in the test run
-    E1_test = res_history_test(1);
-
-    % Amplification factor F = E1 / E0
-    F = E1_test / err0_test;
-
-    % ========================================================
-    % REAL RUN: rescaled initial condition u_init / F
-    % ========================================================
-    u_init_scaled = u_init / F;
-
-    [~, final_res, res_history] = run_swr( ...
-        u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_opt, q_opt, ...
-        k, u_init_scaled, u_ref);
-
-    % Initial error for the scaled run (relative Linf in space-time)
-    err0 = err0_test;
-
-    % Prepend iteration-0 error to history
-    res_hist{s}     = [err0; res_history(:)];
-    final_errors(s) = final_res;
+    % --- B. Asymptotic Formula Run ---
+    % Test run for scaling
+    [~, ~, hist_test_asy] = run_swr(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_asy, q_asy, 1, u_init, u_ref);
+    err0_asy = max(abs(u_init(:) - u_ref(:))) / max(abs(u_ref(:)));
+    F_asy = hist_test_asy(1) / err0_asy;
+    
+    % Real run
+    [~, ~, hist_asy] = run_swr(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_asy, q_asy, k_iter, u_init/F_asy, u_ref);
+    res_hist_asy{s} = [err0_asy; hist_asy(:)];
 end
 
-%%
+%% ============================================================
+% PLOTTING ROUTINES
 % ============================================================
-% FIGURE 1: gamma (nu=0) only optimized curves
-%           + horizontal line = FDTD vs GT final-time error
-% ============================================================
-figure('Name', 'Gamma Convergence', 'Color', 'w'); clf;
-set(gcf, 'Position', [100 100 900 600]); % Standard size
-gamma_idx = find([cases.nu] == 0);
 
-h_curves = gobjects(numel(gamma_idx),1);
-
-for j = 1:numel(gamma_idx)
-    s      = gamma_idx(j);
-    resvec = res_hist{s};
-    nIter  = numel(resvec) - 1;     % iterations 0..nIter
-    its    = 0:nIter;
-
-    h = semilogy(its, resvec, 'LineWidth', LW_BOLD);
-    hold on;
-    col = get(h,'Color');            
-
-    h_curves(j) = h;
-
-    semilogy([0 nIter], ref_gt_errors(s)*[1 1], ...
-             'LineWidth', LW_AXIS, ...
-             'LineStyle', '--', ...
-             'Color', col, ...
-             'HandleVisibility','off');
-end
-
-xlabel('Iteration Index k','FontSize',FS_LABEL, 'FontWeight', 'bold');
-ylabel('SWR Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
-grid on; 
-set(gca,'FontSize',FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
-
-% --- FIX: Set Axes to Standard Size ---
-set(gca, 'Position', POS_AX_STD); 
-
-gamma_labels = arrayfun(@(c) sprintf('\\gamma=%.3g', c.gamma), cases(gamma_idx), ...
-                        'UniformOutput', false);
-
-% --- FIX: Legend Inside SouthWest ---
-lgd = legend(h_curves, gamma_labels, 'Location', 'SouthWest');
-set(lgd, 'FontSize', FS_AXIS);
-
+% --- Helper to plot Num vs Asymp ---
+% Solid = Num, Dashed = Asymp
+plot_convergence_group(cases, res_hist_num, res_hist_asy, 'gamma', 'Gamma Convergence', POS_AX_STD, FS_AXIS, FS_LABEL, LW_BOLD, LW_AXIS);
+plot_convergence_group(cases, res_hist_num, res_hist_asy, 'nu',    'Nu Convergence',    POS_AX_STD, FS_AXIS, FS_LABEL, LW_BOLD, LW_AXIS);
 
 % ============================================================
-% FIGURE 2: nu (gamma=0) only optimized curves
-%           + horizontal line = FDTD vs GT final-time error
-% ============================================================
-figure('Name', 'Nu Convergence', 'Color', 'w'); clf;
-set(gcf, 'Position', [150 150 900 600]); 
-nu_idx = find([cases.gamma] == 0);
-
-h_curves_nu = gobjects(numel(nu_idx),1);
-
-for j = 1:numel(nu_idx)
-    s      = nu_idx(j);
-    resvec = res_hist{s};
-    nIter  = numel(resvec) - 1;     % iterations 0..nIter
-    its    = 0:nIter;
-
-    h = semilogy(its, resvec, 'LineWidth', LW_BOLD);
-    hold on;
-    col = get(h,'Color');
-
-    h_curves_nu(j) = h;
-
-    semilogy([0 nIter], ref_gt_errors(s)*[1 1], ...
-             'LineWidth', LW_AXIS, ...
-             'LineStyle', '--', ...
-             'Color', col, ...
-             'HandleVisibility','off');
-end
-
-xlabel('Iteration Index k','FontSize',FS_LABEL, 'FontWeight', 'bold');
-ylabel('SWR Error','FontSize',FS_LABEL, 'FontWeight', 'bold');
-grid on; 
-set(gca,'FontSize',FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
-
-% --- FIX: Set Axes to Standard Size ---
-set(gca, 'Position', POS_AX_STD); 
-
-nu_labels = arrayfun(@(c) sprintf('\\nu=%.3g', c.nu), cases(nu_idx), ...
-                     'UniformOutput', false);
-
-% --- FIX: Legend Inside (NorthEast is usually better for Nu plots, but you asked for SouthWest) ---
-% Note: Nu plots usually decay fast, so SouthWest is empty.
-lgd = legend(h_curves_nu, nu_labels, 'Location', 'SouthWest'); 
-set(lgd, 'FontSize', FS_AXIS);
-
-
-%%
-% ============================================================
-% TRAJECTORY FIGURES
+% TRAJECTORY FIGURES (with Formula Point)
 % ============================================================
 for s = 1:nCases
     pq = PQ_history{s};
     if isempty(pq), continue; end
-
     gamma = cases(s).gamma;
     nu    = cases(s).nu;
+    
+    % Current Formula Point
+    p_f = opt_params_asy(s,1);
+    q_f = opt_params_asy(s,2);
+    
+    % Current Num Point
+    p_n = opt_params_num(s,1);
+    q_n = opt_params_num(s,2);
 
+    % Objective Landscape
     objfun_pq = @(p,q) obj_Linf(N,T,dt,J,c,gamma,nu,a,M,p,q);
-
-    pmin = min(pq(:,1)); pmax = max(pq(:,1));
-    qmin = min(pq(:,2)); qmax = max(pq(:,2));
-
-    ppad = 0.2*max(1, pmax-pmin);
-    qpad = 0.2*max(1, qmax-qmin);
-
-    pr = linspace(pmin-ppad,pmax+ppad,40);
-    qr = linspace(qmin-qpad,qmax+qpad,40);
+    
+    % Define plot bounds to include both trajectory and formula point
+    p_all = [pq(:,1); p_f];
+    q_all = [pq(:,2); q_f];
+    pmin = min(p_all); pmax = max(p_all);
+    qmin = min(q_all); qmax = max(q_all);
+    
+    ppad = 0.3*max(1, pmax-pmin);
+    qpad = 0.3*max(1, qmax-qmin);
+    
+    pr = linspace(pmin-ppad, pmax+ppad, 50);
+    qr = linspace(qmin-qpad, qmax+qpad, 50);
     [P,Q] = meshgrid(pr,qr);
-
-    Z = arrayfun(@(pp,qq) objfun_pq(pp,qq), P, Q);
-
+    
+    % Evaluate landscape (can be slow, but robust)
+    Z = zeros(size(P));
+    for i=1:numel(P)
+        Z(i) = objfun_pq(P(i), Q(i));
+    end
+    
     figure('Name', sprintf('Traj Case %d', s), 'Color', 'w'); clf; hold on;
-    contourf(P, Q, log10(Z), 20, 'LineStyle','none'); 
+    contourf(P, Q, log10(Z), 30, 'LineStyle','none'); 
     
     cb = colorbar;
     cb.FontSize = FS_AXIS;
-    cb.Label.String = 'log_{10}(Obj)';
-    cb.Label.FontSize = FS_AXIS;
-
-    plot(pq(:,1), pq(:,2), '-o', 'LineWidth',LW_BOLD, 'Color','k', 'MarkerSize', 6);
-    plot(pq(1,1),  pq(1,2),  'ws', 'MarkerSize',MS_MARK, 'LineWidth',3, 'MarkerFaceColor', 'k');
-    plot(pq(end,1),pq(end,2),'rpentagram', 'MarkerSize',MS_MARK+5, 'LineWidth',3, 'MarkerFaceColor', 'r');
-
+    cb.Label.String = 'log_{10}(Error)';
+    
+    % Plot Optimization Path
+    plot(pq(:,1), pq(:,2), '-o', 'LineWidth', 2.0, 'Color','k', 'MarkerSize', 4);
+    
+    % Start (White Square)
+    plot(pq(1,1), pq(1,2), 'ws', 'MarkerSize', 10, 'LineWidth', 2, 'MarkerFaceColor', 'k');
+    
+    % Numerical Optimum (Red Star)
+    plot(p_n, q_n, 'p', 'MarkerSize', 18, 'LineWidth', 2, 'MarkerFaceColor', 'r', 'MarkerEdgeColor','k');
+    
+    % Asymptotic Formula (Green Hexagram)
+    plot(p_f, q_f, 'h', 'MarkerSize', 18, 'LineWidth', 2, 'MarkerFaceColor', 'g', 'MarkerEdgeColor','k');
+    
     xlabel('p', 'FontSize', FS_LABEL, 'FontWeight', 'bold'); 
     ylabel('q', 'FontSize', FS_LABEL, 'FontWeight', 'bold');
     
     title_str = sprintf('\\gamma=%.3g, \\nu=%.3g', gamma, nu);
     title(title_str, 'FontSize', FS_TITLE, 'FontWeight', 'bold');
     
+    legend({'Landscape','Path','Start','Num. Opt','Asymp. Formula'}, 'Location','best', 'FontSize', 14);
     grid on; 
     set(gca,'FontSize',FS_AXIS, 'LineWidth', LW_AXIS, 'FontWeight', 'bold');
 end
 
+%% ============================================================
+% LOCAL FUNCTIONS
 % ============================================================
-% SUMMARY
-% ============================================================
-fprintf('\n=== Final errors vs GT (optimized only) ===\n');
-for s = 1:nCases
-    gamma = cases(s).gamma;
-    nu    = cases(s).nu;
-    label_s = sprintf('gamma=%.3g, nu=%.3g', gamma, nu);
 
-    fprintf('%-25s  error_SWR = %.3e   (p,q) = (%.5f, %.5f)   error_FDTD_vs_GT_final = %.3e\n', ...
-        label_s, final_errors(s), opt_params(s,1), opt_params(s,2), ref_gt_errors(s));
+function [p, q, regime] = get_formula_pq(gamma, nu, c, w_min, w_max)
+    % Selects and computes the asymptotically optimal p,q
+    
+    % Common Geometric Mean vars
+    w_mid = sqrt(w_min * w_max);
+    z     = (w_min / w_max)^(0.25);
+    Y     = sqrt(z / (1 + z + z^2));
+
+    if nu > 1e-9
+        % VISCOELASTIC
+        % Regime Check: Viscoelastic Diffusive if nu*w_min/c^2 >> 1
+        % (Using a soft threshold of 1.0 for switching logic)
+        regime_val = nu * w_min / c^2;
+        
+        if regime_val < 0.5 
+            % --- Visco Propagative ---
+            regime = 'Visco Prop';
+            % q scales linearly with nu
+            q = (nu * w_min * w_max) / (2 * c^3);
+            % p scales with 1/c - O(nu^2)
+            p = 1/c - (nu^2 / (4*c^5)) * (w_max^2 + 0.5*w_min^2); 
+        else
+            % --- Visco Diffusive ---
+            regime = 'Visco Diff';
+            p = Y / sqrt(2 * nu * w_mid);
+            q = p * w_mid;
+        end
+        
+    elseif gamma > 1e-9
+        % TELEGRAPHER
+        % Regime Check: Telegrapher Diffusive if gamma >> w_max
+        regime_val = gamma / w_max;
+        
+        if regime_val < 0.5
+            % --- Tele Propagative ---
+            regime = 'Tele Prop';
+            q = gamma / (2 * c);
+            p = 1/c + (gamma^2 / (16*c)) * (1/w_min^2 + 1/w_max^2);
+        else
+            % --- Tele Diffusive ---
+            regime = 'Tele Diff';
+            % Isomorphic to Visco Diff, scaled by sqrt(gamma)/c
+            factor = sqrt(gamma) / c;
+            p = (factor / sqrt(2 * w_mid)) * Y;
+            q = p * w_mid;
+        end
+    else
+        % PURE WAVE
+        regime = 'Pure Wave';
+        p = 1/c; 
+        q = 0;
+    end
 end
 
-% ============================================================
-% Store trajectory
-% ============================================================
+function plot_convergence_group(cases, hist_num, hist_asy, type, fig_name, pos, fs_ax, fs_lbl, lw_bold, lw_ax)
+    figure('Name', fig_name, 'Color', 'w'); clf;
+    set(gcf, 'Position', [100 100 900 600]); 
+    
+    if strcmp(type, 'gamma')
+        idx_list = find([cases.nu] == 0);
+    else
+        idx_list = find([cases.gamma] == 0);
+    end
+    
+    h_plots = [];
+    labels  = {};
+    
+    hold on;
+    colors = lines(numel(idx_list));
+    
+    for j = 1:numel(idx_list)
+        s = idx_list(j);
+        col = colors(j,:);
+        
+        % Numerical (Solid)
+        res = hist_num{s};
+        its = 0:(numel(res)-1);
+        hp = semilogy(its, res, '-', 'LineWidth', lw_bold, 'Color', col);
+        h_plots(end+1) = hp;
+        
+        % Asymptotic (Dashed)
+        res_a = hist_asy{s};
+        its_a = 0:(numel(res_a)-1);
+        semilogy(its_a, res_a, '--', 'LineWidth', lw_bold, 'Color', col, 'HandleVisibility','off');
+        
+        if strcmp(type, 'gamma')
+            lbl = sprintf('\\gamma=%.3g', cases(s).gamma);
+        else
+            lbl = sprintf('\\nu=%.3g', cases(s).nu);
+        end
+        labels{end+1} = lbl;
+    end
+    
+    xlabel('Iteration k', 'FontSize', fs_lbl, 'FontWeight', 'bold');
+    ylabel('Error', 'FontSize', fs_lbl, 'FontWeight', 'bold');
+    grid on;
+    set(gca, 'FontSize', fs_ax, 'LineWidth', lw_ax, 'FontWeight', 'bold', 'Position', pos);
+    
+    % Add dummy lines for legend explanation
+    h_solid = plot(nan,nan, 'k-', 'LineWidth', 2);
+    h_dash  = plot(nan,nan, 'k--', 'LineWidth', 2);
+    
+    legend([h_plots, h_solid, h_dash], [labels, {'Num. Opt.', 'Formula'}], ...
+           'Location', 'SouthWest', 'FontSize', 16);
+end
+
 function stop = store_trajectory(x,optimvalues,state,idx)
     stop = false;
     global PQ_history

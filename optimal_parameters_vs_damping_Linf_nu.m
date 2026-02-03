@@ -11,13 +11,14 @@ P = get_sim_params();
 N  = P.N;      % Number of grid points or system size
 a  = P.a;      % System parameter
 M  = P.M;      % Another system parameter
+M = 0;
 T  = P.T;      % Total simulation time
 c  = P.c;      % Wave speed or similar constant
 dt = P.dt;     % Time step size
 J  = P.J;      % Parameter for objective function
 
 %% OPTIMIZATION CONFIGURATION
-tol = 1e-9;        % Tolerance for optimization convergence
+tol = 1e-12;        % Tolerance for optimization convergence
 padding = 0.05;    % Padding for plot axis limits (5% extra space)
 
 %% FINE GRID DEFINITION FOR PARAMETER SPACE EXPLORATION
@@ -116,7 +117,8 @@ q_approx_curve = 0.5 * (nu_vals / c^3) * (w_min * w_max);
 
 % 3. Compute p Approximation (Minimax Phase Correction)
 % Formula: p ~ 1/c - 0.25 * nu^2 * w_max^2 / c^5
-p_approx_curve = (1/c) - 0.25 * (nu_vals.^2 / c^5) * w_max^2;
+% p_approx_curve = (1/c) - 0.25 * (nu_vals.^2 / c^5) * (w_max^2 + w_min^2);
+p_approx_curve = (1/c) + (nu_vals.^2 / c^5) * (- 12/48 * (w_max^2 + w_min^2) - 0*1/6 * w_min * w_max);
 
 % 4. Compute Rho Approximation (Contraction Rate)
 % Formula: rho ~ 0.25 * nu * (w_max - w_min) / c^2

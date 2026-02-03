@@ -5,7 +5,10 @@ function val = obj_Linf(N, T, dt, J, c, gamma, nu, a, M, theta1, theta2)
     % Frequency grid
     omega_min = pi / T;
     omega_max = pi / dt;
-    omegas = linspace(omega_min, omega_max, J);
+    % omega_min = 0;
+    % omega_max = 20 * pi / dt;
+    % omegas = linspace(omega_min, omega_max, J);
+    omegas = logspace(log(omega_min), log(omega_max), J);
     s_vals = 1i * omegas;
     
     % Compute contraction factors

@@ -3,10 +3,8 @@ function P = get_sim_params()
 
     % Domain / geometry / decomposition
     P.N  = 2;
-    P.a  = 0.3;
-    P.M  = 0;
-    P.b  = P.a + P.M;
-	P.Lx = P.N * P.a + P.M;
+    % P.a  = 0.3;
+    P.a = 2;
 	P.T  = 5.0;
 
     % Physical parameters
@@ -15,7 +13,11 @@ function P = get_sim_params()
 	P.nu = 0.0;
 
     % Time / space / frequency discretization
-    P.dh = 0.002;
-    P.dt = 0.002;
+    P.dh = 0.02;
+    P.dt = 0.02;
     P.J  = 1000;
+
+    P.M = 10*P.dh;
+    P.b = P.a + P.M;
+    P.Lx = P.N * P.a + P.M;
 end

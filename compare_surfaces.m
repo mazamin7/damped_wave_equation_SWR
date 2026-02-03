@@ -16,13 +16,16 @@ a  = P.a;
 M  = P.M;
 b  = P.b;
 Lx = P.Lx;
-T  = P.T;
 c  = P.c;
+% T  = P.T;
 gamma = P.gamma; % ignore
 nu = P.nu; % ignore
 dh = P.dh;
 dt = P.dt;
 J  = P.J;
+
+dist_to_bound = (1/3) * Lx;
+T = 0.9 * (dist_to_bound / c); % Set T slightly less than travel time to boundary
 
 %%
 % % Viscous damping case
@@ -37,9 +40,9 @@ J  = P.J;
 
 % Viscoelastic damping case
 gamma = 0;
-% nu = 0.001;
+nu = 0.001;
 % nu = 0.01;
-nu = 0.05;
+% nu = 0.05;
 % nu = 0.1;
 % k = 10;
 k = 5*N;
@@ -66,7 +69,7 @@ x_grid = linspace(0,Lx,Nx);
 gaussian = @(r,mu,sigma) 1/(2*pi*sigma^2) * exp(-(r-mu).^2/(2*sigma^2));
     
 % Create normalized components as function handles
-gaussian_normalized = @(x) gaussian(x, a/2, Lx/200);
+gaussian_normalized = @(x) gaussian(x, 2/3*Lx, Lx/200);
     
 % Create the final initial condition function
 u0 = @(x) gaussian_normalized(x);
