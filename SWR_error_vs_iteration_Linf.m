@@ -21,8 +21,7 @@ c  = P.c;
 
 % Infinite Domain approx via Time constraint
 dist_to_bound = (1/3) * Lx;
-T = 0.9 * (dist_to_bound / c); 
-
+T = 0.8 * (dist_to_bound / c); 
 dh = P.dh;
 dt = P.dt;
 J  = P.J;
@@ -30,7 +29,6 @@ J  = P.J;
 % Frequency Band for Asymptotic Analysis
 omega_min = pi / T;
 omega_max = pi / dt;
-
 fprintf('Frequency Band: w_min = %.2f, w_max = %.2e\n', omega_min, omega_max);
 
 %% Grid Setup
@@ -46,16 +44,29 @@ sigma = Lx / 40;
 u0 = @(x) A0 * exp( - (x - x_c).^2 ./ (2*sigma^2) );
 v0 = @(x) zeros(size(x)); 
 
+% % --- 8 CASES
+% cases = [
+%     struct('gamma',1e-4   ,'nu',0)
+%     struct('gamma',1e-3   ,'nu',0)
+%     struct('gamma',1e-2  ,'nu',0)
+%     struct('gamma',1e-1  ,'nu',0)
+%     struct('gamma',0   ,'nu',1e-7)
+%     struct('gamma',0   ,'nu',1e-6)
+%     struct('gamma',0   ,'nu',1e-5)
+%     struct('gamma',0   ,'nu',1e-4)
+% ];
+% nCases = numel(cases);
+
 % --- 8 CASES
 cases = [
-    struct('gamma',4   ,'nu',0)
-    struct('gamma',8   ,'nu',0)
-    struct('gamma',10  ,'nu',0)
-    struct('gamma',12  ,'nu',0)
-    struct('gamma',0   ,'nu',0.001)
-    struct('gamma',0   ,'nu',0.01)
-    struct('gamma',0   ,'nu',0.05)
-    struct('gamma',0   ,'nu',0.1)
+    struct('gamma',1e4   ,'nu',0)
+    struct('gamma',1e5   ,'nu',0)
+    struct('gamma',1e6  ,'nu',0)
+    struct('gamma',1e7  ,'nu',0)
+    struct('gamma',0   ,'nu',1e2)
+    struct('gamma',0   ,'nu',1e3)
+    struct('gamma',0   ,'nu',1e4)
+    struct('gamma',0   ,'nu',1e5)
 ];
 nCases = numel(cases);
 
@@ -69,6 +80,7 @@ ref_gt_errors   = zeros(nCases,1); % Reference Error (approx)
 x0 = [1.0/c, 0];     % Initial guess for numerical optimizer
 global PQ_history
 PQ_history = cell(nCases,1);
+
 base_options = optimset('Display','off','TolX',1e-12,'TolFun',1e-12);
 
 % Random initial guess for SWR (shared across cases)
@@ -82,7 +94,7 @@ for s = 1:nCases
     nu    = cases(s).nu;
     label_s = sprintf('\\gamma=%.3g, \\nu=%.3g', gamma, nu);
     fprintf('\nCase %d: %s\n', s, label_s);
-
+    
     % 1. Reference Solution (FDTD)
     u_ref = run_fdtd(u0, v0, Lx, T, c, dh, dt, gamma, nu);
     
@@ -90,7 +102,7 @@ for s = 1:nCases
     [p_asy, q_asy, regime_name] = get_formula_pq(gamma, nu, c, omega_min, omega_max);
     opt_params_asy(s,:) = [p_asy, q_asy];
     fprintf('  Formula [%s]: p=%.4f, q=%.4f\n', regime_name, p_asy, q_asy);
-
+    
     % 3. Numerical Optimization p,q
     objfun = @(x) obj_Linf(N,T,dt,J,c,gamma,nu,a,M,x(1),x(2));
     outfun = @(x,optimvalues,state) store_trajectory(x,optimvalues,state,s);
@@ -101,10 +113,10 @@ for s = 1:nCases
     q_num = x_opt(2);
     opt_params_num(s,:) = x_opt;
     fprintf('  Numeric [Nelder]: p=%.4f, q=%.4f, obj=%.3e\n', p_num, q_num, fval);
-
+    
     % 4. SWR Runs
     % Number of iterations
-    if s < 5, k_iter = 60; else, k_iter = 30; end
+    if s < 5, k_iter = 500; else, k_iter = 500; end
     
     % --- A. Numerical Best Run ---
     % Test run for scaling
@@ -115,7 +127,7 @@ for s = 1:nCases
     % Real run
     [~, ~, hist_num] = run_swr(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_num, q_num, k_iter, u_init/F_num, u_ref);
     res_hist_num{s} = [err0_num; hist_num(:)];
-
+    
     % --- B. Asymptotic Formula Run ---
     % Test run for scaling
     [~, ~, hist_test_asy] = run_swr(u0, v0, N, a, M, T, c, dh, dt, gamma, nu, p_asy, q_asy, 1, u_init, u_ref);
@@ -130,7 +142,6 @@ end
 %% ============================================================
 % PLOTTING ROUTINES
 % ============================================================
-
 % --- Helper to plot Num vs Asymp ---
 % Solid = Num, Dashed = Asymp
 plot_convergence_group(cases, res_hist_num, res_hist_asy, 'gamma', 'Gamma Convergence', POS_AX_STD, FS_AXIS, FS_LABEL, LW_BOLD, LW_AXIS);
@@ -152,7 +163,7 @@ for s = 1:nCases
     % Current Num Point
     p_n = opt_params_num(s,1);
     q_n = opt_params_num(s,2);
-
+    
     % Objective Landscape
     objfun_pq = @(p,q) obj_Linf(N,T,dt,J,c,gamma,nu,a,M,p,q);
     
@@ -208,55 +219,121 @@ end
 %% ============================================================
 % LOCAL FUNCTIONS
 % ============================================================
-
-function [p, q, regime] = get_formula_pq(gamma, nu, c, w_min, w_max)
-    % Selects and computes the asymptotically optimal p,q
+function [p, q, regime] = get_formula_pq(gamma, nu, c, w_min, w_max, delta)
+    % GET_FORMULA_PQ Computes asymptotically optimal transmission parameters.
+    %
+    % Inputs:
+    %   gamma, nu : Damping parameters
+    %   c         : Wave speed
+    %   w_min, max: Frequency band
+    %   delta     : (Optional) Overlap size. Defaults to 0.
+    %
+    % Outputs:
+    %   p, q      : Transmission coefficients (Lambda = q + s*p)
+    %   regime    : String description of the active regime
     
-    % Common Geometric Mean vars
+    if nargin < 6, delta = 0; end
+
+    % Common Geometric Mean vars (for Small Delta / Equioscillation)
     w_mid = sqrt(w_min * w_max);
     z     = (w_min / w_max)^(0.25);
     Y     = sqrt(z / (1 + z + z^2));
-
+    
     if nu > 1e-9
-        % VISCOELASTIC
-        % Regime Check: Viscoelastic Diffusive if nu*w_min/c^2 >> 1
-        % (Using a soft threshold of 1.0 for switching logic)
-        regime_val = nu * w_min / c^2;
+        % =========================================================
+        % VISCOELASTIC REGIME
+        % =========================================================
+        % Check: Viscoelastic Diffusive if nu*w_min/c^2 >> 1
+        is_diffusive = (nu * w_min / c^2) > 1.0;
         
-        if regime_val < 0.5 
+        if ~is_diffusive
             % --- Visco Propagative ---
             regime = 'Visco Prop';
-            % q scales linearly with nu
-            q = (nu * w_min * w_max) / (2 * c^3);
-            % p scales with 1/c - O(nu^2)
-            p = 1/c - (nu^2 / (4*c^5)) * (w_max^2 + 0.5*w_min^2); 
+            
+            % Check Overlap Condition: nu * w_min^2 * delta / c^3
+            % (Transition to Big Overlap logic)
+            is_big_overlap = (nu * w_min^2 * delta / (2*c^3)) > 1.0;
+            
+            if is_big_overlap
+                % Large Overlap: Match w_min exactly
+                q = (nu * w_min^2) / (2 * c^3);
+                p = 1/c - (3 * nu^2 * w_min^2) / (8 * c^5);
+                regime = [regime ' (Big \delta)'];
+            else
+                % Small Overlap: Equioscillation (Minimax)
+                q = (nu * w_min * w_max) / (2 * c^3);
+                p = 1/c - (nu^2 / (4*c^5)) * (w_max^2 + 0.5*w_min^2); 
+            end
+            
         else
             % --- Visco Diffusive ---
             regime = 'Visco Diff';
-            p = Y / sqrt(2 * nu * w_mid);
-            q = p * w_mid;
+            
+            % Check Overlap Condition: delta * sqrt(w_min / nu)
+            is_big_overlap = (delta * sqrt(w_min / (2*nu))) > 1.0;
+            
+            if is_big_overlap
+                % Large Overlap: Pointwise match at w_min
+                q = sqrt(w_min / (2*nu));
+                p = 1 / sqrt(2 * nu * w_min);
+                regime = [regime ' (Big \delta)'];
+            else
+                % Small Overlap: 3-Point Equioscillation (w_mid)
+                p = Y / sqrt(2 * nu * w_mid);
+                q = p * w_mid;
+            end
         end
         
     elseif gamma > 1e-9
-        % TELEGRAPHER
-        % Regime Check: Telegrapher Diffusive if gamma >> w_max
-        regime_val = gamma / w_max;
+        % =========================================================
+        % TELEGRAPHER REGIME
+        % =========================================================
+        % Check: Telegrapher Diffusive if gamma >> w_max
+        % (Conservative threshold: if gamma dominates even the highest freq)
+        is_diffusive = (gamma / w_max) > 1.0;
         
-        if regime_val < 0.5
+        if ~is_diffusive
             % --- Tele Propagative ---
             regime = 'Tele Prop';
-            q = gamma / (2 * c);
-            p = 1/c + (gamma^2 / (16*c)) * (1/w_min^2 + 1/w_max^2);
+            
+            % Check Overlap Condition: gamma * delta / c
+            is_big_overlap = (gamma * delta / (2*c)) > 1.0;
+            
+            if is_big_overlap
+                % Large Overlap: Match w_min
+                q = gamma / (2 * c);
+                p = 1/c + (gamma^2 / (8 * c * w_min^2));
+                regime = [regime ' (Big \delta)'];
+            else
+                % Small Overlap: Equioscillation
+                q = gamma / (2 * c);
+                p = 1/c + (gamma^2 / (16*c)) * (1/w_min^2 + 1/w_max^2);
+            end
+            
         else
             % --- Tele Diffusive ---
             regime = 'Tele Diff';
-            % Isomorphic to Visco Diff, scaled by sqrt(gamma)/c
-            factor = sqrt(gamma) / c;
-            p = (factor / sqrt(2 * w_mid)) * Y;
-            q = p * w_mid;
+            
+            % Check Overlap Condition: delta/c * sqrt(gamma * w_min)
+            is_big_overlap = (delta/c * sqrt(gamma * w_min / 2)) > 1.0;
+            
+            if is_big_overlap
+                % Large Overlap: Pointwise match at w_min
+                q = sqrt(gamma * w_min) / (c * sqrt(2));
+                p = sqrt(gamma) / (c * sqrt(2 * w_min));
+                regime = [regime ' (Big \delta)'];
+            else
+                % Small Overlap: 3-Point Equioscillation
+                % Isomorphic to Visco Diff, scaled by sqrt(gamma)/c
+                factor = sqrt(gamma) / c;
+                p = (factor / sqrt(2 * w_mid)) * Y;
+                q = p * w_mid;
+            end
         end
     else
-        % PURE WAVE
+        % =========================================================
+        % PURE WAVE EQUATION
+        % =========================================================
         regime = 'Pure Wave';
         p = 1/c; 
         q = 0;
@@ -276,7 +353,7 @@ function plot_convergence_group(cases, hist_num, hist_asy, type, fig_name, pos, 
     h_plots = [];
     labels  = {};
     
-    hold on;
+    % Removed 'hold on' here to prevent locking linear scale before semilogy
     colors = lines(numel(idx_list));
     
     for j = 1:numel(idx_list)
@@ -287,6 +364,9 @@ function plot_convergence_group(cases, hist_num, hist_asy, type, fig_name, pos, 
         res = hist_num{s};
         its = 0:(numel(res)-1);
         hp = semilogy(its, res, '-', 'LineWidth', lw_bold, 'Color', col);
+        
+        hold on; % Call hold on AFTER the first semilogy
+        
         h_plots(end+1) = hp;
         
         % Asymptotic (Dashed)

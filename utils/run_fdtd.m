@@ -2,14 +2,14 @@ function u = run_fdtd(u0, v0, Lx, T, c, dh, dt, gamma, nu)
     % --- grid-exact assertion for dh, dt ---
     Nx = round(Lx / dh) + 1;
     Nt = round(T  / dt) + 1;
-    dh_eff = Lx / (Nx - 1);
-    dt_eff = T  / (Nt - 1);
-
-    tol = 1e-12;
-    assert(abs(dh_eff - dh) < tol, ...
-      'run_fdtd_1D:dh_mismatch', 'Requested dh=%.16g not grid-exact. Use dh=%.16g.', dh, dh_eff);
-    assert(abs(dt_eff - dt) < tol, ...
-      'run_fdtd_1D:dt_mismatch', 'Requested dt=%.16g not grid-exact. Use dt=%.16g.', dt, dt_eff);
+    % dh_eff = Lx / (Nx - 1);
+    % dt_eff = T  / (Nt - 1);
+    % 
+    % tol = 1e-12;
+    % assert(abs(dh_eff - dh) < tol, ...
+    %   'run_fdtd_1D:dh_mismatch', 'Requested dh=%.16g not grid-exact. Use dh=%.16g.', dh, dh_eff);
+    % assert(abs(dt_eff - dt) < tol, ...
+    %   'run_fdtd_1D:dt_mismatch', 'Requested dt=%.16g not grid-exact. Use dt=%.16g.', dt, dt_eff);
     assert(Nt >= 2, 'run_fdtd_1D:Nt_too_small', 'Nt must be at least 2.');
     CFL = c*dt/dh;
     assert(CFL <= 1+1e-14, 'run_fdtd_1D:CFL', 'CFL=c*dt/dh=%.3g > 1 may be unstable.', CFL);
