@@ -8,7 +8,8 @@ function r = rho(N, s, theta1, theta2, c, gamma, nu, a, b)
         num = ikappa - (theta1*s + theta2);
         den = ikappa + (theta1*s + theta2);
     
-        r = num ./ den * exp(-ikappa * (b-a));
+        % r = num ./ den * exp(-ikappa * (b-a));
+        r = num ./ den;
     else
         G = matrix_G(N, s, theta1, theta2, c, gamma, nu, a, b);
         r = max(abs(eig(G)));
