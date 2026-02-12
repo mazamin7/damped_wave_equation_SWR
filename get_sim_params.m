@@ -13,8 +13,8 @@ function P = get_sim_params()
 	P.nu = 0.0;
 
     % Time / space / frequency discretization
-    P.dh = 0.005;
-    P.dt = 0.005;
+    P.dh = 0.05;
+    P.dt = 0.05;
     P.J  = 1000;
 
     P.M = 2*P.dh;

@@ -44,18 +44,44 @@ sigma = Lx / 160;
 u0 = @(x) A0 * exp( - (x - x_c).^2 ./ (2*sigma^2) );
 v0 = @(x) zeros(size(x)); 
 
+% % --- 8 CASES
+% cases = [
+%     struct('gamma',1e-5   ,'nu',0)
+%     struct('gamma',1e-4   ,'nu',0)
+%     struct('gamma',1e-3  ,'nu',0)
+%     struct('gamma',1e-2  ,'nu',0)
+%     struct('gamma',0   ,'nu',1e-7)
+%     struct('gamma',0   ,'nu',1e-6)
+%     struct('gamma',0   ,'nu',1e-5)
+%     struct('gamma',0   ,'nu',1e-4)
+% ];
+% nCases = numel(cases);
+
 % --- 8 CASES
 cases = [
-    struct('gamma',1e4   ,'nu',0)
-    struct('gamma',1e5   ,'nu',0)
-    struct('gamma',1e6  ,'nu',0)
-    struct('gamma',1e7  ,'nu',0)
-    struct('gamma',0   ,'nu',1e2)
-    struct('gamma',0   ,'nu',1e3)
-    struct('gamma',0   ,'nu',1e4)
-    struct('gamma',0   ,'nu',1e5)
+    struct('gamma',1e0   ,'nu',0)
+    struct('gamma',1e1   ,'nu',0)
+    struct('gamma',1e2  ,'nu',0)
+    struct('gamma',1e3  ,'nu',0)
+    struct('gamma',0   ,'nu',1e-2)
+    struct('gamma',0   ,'nu',1e-1)
+    struct('gamma',0   ,'nu',1e0)
+    struct('gamma',0   ,'nu',1e1)
 ];
 nCases = numel(cases);
+
+% % --- 8 CASES
+% cases = [
+%     struct('gamma',1e4   ,'nu',0)
+%     struct('gamma',1e5   ,'nu',0)
+%     struct('gamma',1e6  ,'nu',0)
+%     struct('gamma',1e7  ,'nu',0)
+%     struct('gamma',0   ,'nu',1e2)
+%     struct('gamma',0   ,'nu',1e3)
+%     struct('gamma',0   ,'nu',1e4)
+%     struct('gamma',0   ,'nu',1e5)
+% ];
+% nCases = numel(cases);
 
 % Storage
 res_hist_num    = cell(nCases,1); 
@@ -254,40 +280,79 @@ function r = rho(N, s, theta1, theta2, c, gamma, nu, a, b)
     end
 end
 
-function [p, q, regime] = get_formula_pq(gamma, nu, c, w_min, w_max, delta)
-    if nargin < 6, delta = 0; end
-    w_mid = sqrt(w_min * w_max);
-    z     = (w_min / w_max)^(0.25);
-    Y     = sqrt(z / (1 + z + z^2));
-    if nu > 1e-9
-        is_diffusive = (nu * w_min / c^2) > 1.0;
-        if ~is_diffusive
-            regime = 'Visco Prop';
-            is_big_overlap = (nu * w_min^2 * delta / (2*c^3)) > 1.0;
-            if is_big_overlap, q = (nu * w_min^2)/(2*c^3); p = 1/c - (3*nu^2*w_min^2)/(8*c^5); regime=[regime ' (Big \delta)'];
-            else, q = (nu*w_min*w_max)/(2*c^3); p = 1/c - (nu^2/(4*c^5))*(w_max^2 + 0.5*w_min^2); end
-        else
-            regime = 'Visco Diff';
-            is_big_overlap = (delta * sqrt(w_min/(2*nu))) > 1.0;
-            if is_big_overlap, q=sqrt(w_min/(2*nu)); p=1/sqrt(2*nu*w_min); regime=[regime ' (Big \delta)'];
-            else, p = Y/sqrt(2*nu*w_mid); q = p*w_mid; end
-        end
-    elseif gamma > 1e-9
-        is_diffusive = (gamma / w_max) > 1.0;
-        if ~is_diffusive
-            regime = 'Tele Prop';
-            is_big_overlap = (gamma*delta/(2*c)) > 1.0;
-            if is_big_overlap, q=gamma/(2*c); p=1/c+(gamma^2/(8*c*w_min^2)); regime=[regime ' (Big \delta)'];
-            else, q=gamma/(2*c); p=1/c+(gamma^2/(16*c))*(1/w_min^2 + 1/w_max^2); end
-        else
-            regime = 'Tele Diff';
-            is_big_overlap = (delta/c*sqrt(gamma*w_min/2)) > 1.0;
-            if is_big_overlap, q=sqrt(gamma*w_min)/(c*sqrt(2)); p=sqrt(gamma)/(c*sqrt(2*w_min)); regime=[regime ' (Big \delta)'];
-            else, factor=sqrt(gamma)/c; p=(factor/sqrt(2*w_mid))*Y; q=p*w_mid; end
-        end
-    else
-        regime = 'Pure Wave'; p = 1/c; q = 0;
-    end
+% function [p, q, regime] = get_formula_pq(gamma, nu, c, w_min, w_max, delta)
+%     if nargin < 6, delta = 0; end
+%     w_mid = sqrt(w_min * w_max);
+%     z     = (w_min / w_max)^(0.25);
+%     Y     = sqrt(z / (1 + z + z^2));
+%     if nu > 1e-9
+%         is_diffusive = (nu * w_min / c^2) > 1.0;
+%         if ~is_diffusive
+%             regime = 'Visco Prop';
+%             is_big_overlap = (nu * w_min^2 * delta / (2*c^3)) > 1.0;
+%             if is_big_overlap, q = (nu * w_min^2)/(2*c^3); p = 1/c - (3*nu^2*w_min^2)/(8*c^5); regime=[regime ' (Big \delta)'];
+%             else, q = (nu*w_min*w_max)/(2*c^3); p = 1/c - (nu^2/(4*c^5))*(w_max^2 + 0.5*w_min^2); end
+%         else
+%             regime = 'Visco Diff';
+%             is_big_overlap = (delta * sqrt(w_min/(2*nu))) > 1.0;
+%             if is_big_overlap, q=sqrt(w_min/(2*nu)); p=1/sqrt(2*nu*w_min); regime=[regime ' (Big \delta)'];
+%             else, p = Y/sqrt(2*nu*w_mid); q = p*w_mid; end
+%         end
+%     elseif gamma > 1e-9
+%         is_diffusive = (gamma / w_max) > 1.0;
+%         if ~is_diffusive
+%             regime = 'Tele Prop';
+%             is_big_overlap = (gamma*delta/(2*c)) > 1.0;
+%             if is_big_overlap, q=gamma/(2*c); p=1/c+(gamma^2/(8*c*w_min^2)); regime=[regime ' (Big \delta)'];
+%             else, q=gamma/(2*c); p=1/c+(gamma^2/(16*c))*(1/w_min^2 + 1/w_max^2); end
+%         else
+%             regime = 'Tele Diff';
+%             is_big_overlap = (delta/c*sqrt(gamma*w_min/2)) > 1.0;
+%             if is_big_overlap, q=sqrt(gamma*w_min)/(c*sqrt(2)); p=sqrt(gamma)/(c*sqrt(2*w_min)); regime=[regime ' (Big \delta)'];
+%             else, factor=sqrt(gamma)/c; p=(factor/sqrt(2*w_mid))*Y; q=p*w_mid; end
+%         end
+%     else
+%         regime = 'Pure Wave'; p = 1/c; q = 0;
+%     end
+% end
+
+function [p, q, regime] = get_formula_pq(gamma, nu, c, w_min, w_max)
+    % This function now implements the Geometric Mean (Phase Opposite)
+    % condition: Lambda(w1)*Lambda(w2) = ikappa(w1)*ikappa(w2)
+    
+    % 1. Define Physics (Wavenumber handle)
+    % ikappa = (i*w/c) * sqrt( (1 + gamma/(i*w)) / (1 + i*w*nu/c^2) )
+    get_Z = @(w) (1i*w/c) .* sqrt( (1 + gamma./(1i*w)) ./ (1 + (1i*w*nu)/c^2) );
+    
+    % 2. Evaluate at Endpoints
+    Z1 = get_Z(w_min);
+    Z2 = get_Z(w_max);
+    
+    % 3. Target Product P = A + iB
+    P = Z1 * Z2;
+    A = real(P);
+    B = imag(P);
+    
+    % 4. Solve Biquadratic Equation for p
+    % Formula derived from: p^4(w1*w2) + A*p^2 - (B/(w1+w2))^2 = 0
+    Wsum  = w_min + w_max;
+    Wprod = w_min * w_max;
+    K_term = (B / Wsum)^2;
+    
+    Discriminant = A^2 + 4 * Wprod * K_term;
+    
+    % p^2 solution
+    p_sq = (-A + sqrt(Discriminant)) / (2 * Wprod);
+    
+    % Final Parameters
+    p = sqrt(p_sq);
+    q = abs( B / (p * Wsum) ); % abs() ensures physical stability (positivity)
+    
+    % Identify Regime for labeling
+    if nu > 1e-9 && gamma > 1e-9, regime = 'Full Visco-Tele';
+    elseif nu > 1e-9, regime = 'Viscoelastic';
+    elseif gamma > 1e-9, regime = 'Telegrapher';
+    else, regime = 'Pure Wave'; end
 end
 
 function plot_convergence_group(cases, hist_num, hist_asy, type, fig_name, pos, fs_ax, fs_lbl, lw_bold, lw_ax)
